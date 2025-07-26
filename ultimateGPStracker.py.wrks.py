@@ -95,68 +95,13 @@ GPSdata = {
 # module via  a uart.  We  put this  in a thread  as we don't  want to
 # loose data while processing it.
 
-def readGPSdataThread():
+def gpsThread():
     print("Thread Running")
     global keepRunning, NMEAdata # NMEAdata is a dictionary, like a map in c++
-
-    # inlitiase string KEY in the dictionary to null string.
-    # dictionary definition, Key=NMEAdata read from GPS uart.
-    GPGGA = ""
-    GPGSA = ""
-    GPRMC = ""
-    GPVTG = ""
-    # do nothing if there is no data in the buffer
-    while not GPS.any():
+    while keepRunning:
         pass
-    # now we have data, read buffer till it's empty, the stale
-    # data, this clears the buffer
-    while GPS.any():
-        junk=GPS.read()
-        print(junk)
-        myNMEA = "" # initialise the NMEA string read from uart
-
-        while keepRunning:
-            # we only read NMEA data when it's present in the buffer
-            if GPS.any():
-                # Read one byte at a time, ie one char at a time till
-                # EOL, and decode it from a byte to a string using
-                # utf-8 codec(ASCII is a subset of UTF-8)
-                myChar=GPS.read(1).decode('utf-8')
-                # supress line feed, so you can contiue to read accross
-                # print(myChar, end="")
-                myNMEA+=myChar
-                if myChar == '\n':
-                    # When EOL is reached strip the EOL char from myNMEA string.
-                    myNMEA = myNMEA.strip() 
-                    # store the NMEAdata strings into variables
-                    if myNMEA[1:6] == "GPGGA":
-                        GPGGA = myNMEA
-                    if myNMEA[1:6] == "GPGSA":
-                        GPGSA = myNMEA
-                    if myNMEA[1:6] == "GPRMC":
-                        GPRMC = myNMEA
-                    if myNMEA[1:6] == "GPVTG":
-                        GPVTG = myNMEA
-
-                    # if _all_  the NMEA data is  present populate the
-                    # dictionary  NMEAdata. ie  setup the  map between
-                    # key=type of NMEA string = string of data
-                    if GPGGA != "" and GPGSA!="" and GPRMC!="" and GPVTG!="":
-                        # we must do this within a lock as other
-                        # threads may want to access the NMEAdata
-                        # dictionary elements at the same time
-                        dataLock.acquire()
-                        NMEAdata = {
-                            'GPGGA' : GPGGA,
-                            'GPGSA' : GPGSA,
-                            'GPRMC' : GPRMC,
-                            'GPVTG' : GPVTG
-                        }
-                        dataLock.release()
-                    
-            myNMEA = "" # reset to read the next NMEA data string
     print("Thread Terminated Cleanly")
-# end: gpsThread ###############################################################
+
 
 # # do nothing if there is no data in the buffer
 # while not GPS.any():
@@ -252,7 +197,7 @@ def readGPSdataThread():
 ###############################################################################
 
 # launch the reading data thread
-_thread.start_new_thread(readGPSdataThread, ())
+_thread.start_new_thread(gpsThread, ())
 time.sleep(2)
 try:
     while True:
