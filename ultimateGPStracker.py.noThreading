@@ -91,15 +91,13 @@ GPSdata = {
     }
 
 
-# This is the reading NMEAdata thread.  NMEAdata comming for the GPS
-# module via a uart.
-#
-def gpsThread():
-    print("Thread Running")
-    global keepRunning, NMEAdata # NMEAdata is a dictionary, like a map in c++
-    while keepRunning:
-        pass
-    print("Thread Terminated Cleanly")
+# # This is the reading NMEAdata thread
+# def gpsThread(self):
+#     print("Thread Running")
+#     global keepRunning, NMEAdata # NMEAdata is a dictionary, like a map in c++
+#     while keepRunning:
+#         pass
+#     print("Thread Terminated Cleanly")
 
 # # launch the reading data thread
 # _thread.start_new_thread(gpsThread,())
@@ -193,10 +191,10 @@ def gpsThread():
 #                 # reset for next NEMA sentence
 #                 myNMEA=""
 
+# _thread.start_new_thread(gpsThread,())
+# time.sleep(2)
 
 # main.cpp
-_thread.start_new_thread(gpsThread, ())
-time.sleep(2)
 try:
     while True:
         # dataLock.acquire()
