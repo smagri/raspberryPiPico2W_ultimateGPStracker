@@ -2,10 +2,11 @@
 
 # GPGGA,010039.000,3346.5863,S,15058.1509,E,2,09,1.05,92.3,M,21.9,M,,*48
 
-#       UTCtime,latitude, N/S hemisphere, longitude, E/W hemisphere,
-#       do we have a fix(indicates accuracy, 1=normal GPS 5-10m,
-#       2=differential fix 1-3m), number of satellites used for fix,
-#       how diluted and the lower the number the better,our actual
+#       (1)UTCtime,(2)latitude,   (3)N/S   hemisphere,   (4)longitude,
+#       (5)E/W  hemisphere, (6)do  we have  a fix(indicates  accuracy,
+#       0=noFix,  1=normal   GPS  5-10m,  2=differential   fix  1-3m),
+#       (7)number of  satellites used for  fix, (8)how diluted  is our
+#       GPS  data.  The  lower the  number the  better, (9)our  actual
 #       elevation in meters given the number of sattilites we have(you
 #       need >5 for a good fix).
 
@@ -21,12 +22,14 @@
 
 #
 # $GPGSV,4,1,16,30,71,159,22,14,65,249,16,22,48,277,19,07,48,090,22*79
-#
-# num messages, message number, num  satellites in view, satellite num
-# fixed to, elevation,  azimuth is a bearing or  measurment from north
-# to east, signal strength  in dB, 20-30 is a weak  signal - btw 30-40
-# good  signal -btw  40-50  is a  very good  signal  then repeat  from
-# sattilite number, elevation, azimuth
+
+# (1)num  messages,  (2)message  number, (3)num  satellites  in  view,
+# (4)satellite num fixed to, (5)elevation,  (6)azimuth is a bearing or
+# measurment from north to east, (7)signal  strength in dB, 20-30 is a
+# weak signal - btw 30-40 good signal -btw 40-50 is a very good signal
+# then repeat from sattilite number, elevation, azimuth
+
+
 
 # General info: 24  satellites in 6 different orbits,  they are evenly
 # spaced above the earth, at  about 12,5000miles up.  Each one circles
@@ -63,7 +66,7 @@ GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
 
 # create the atomic lock in python, in c++ we put dataLock definition
 # in header file.
-dateLock = _thread.allocate_lock()
+dataLock = _thread.allocate_lock()
 
 # we can shutdown the thread with Ctrl-C cleanly, like the destructor
 # in c++
@@ -73,6 +76,9 @@ keepRunning = True
 # and c++ index=GPGGA, data=="" at this stage
 #
 # The raw NMEAdata
+#
+# This is the syntax of how you define a key,value pair in python. You
+# can initialise an empty dictionary with empty_dict = {}
 NMEAdata = {
     'GPGGA' : "",
     'GPGSA' : "",
@@ -80,22 +86,27 @@ NMEAdata = {
     'GPVTG' : ""
     }
 
-# interpreted GPS UART data output lines/NMEAdata data lines
+# interpreted GPS UART data output lines/NMEAdata data lines into a
+# dictionary of key,value pairs.  key=string, value=integer
 GPSdata = {
-    'latDD' : 0,
-    'lonDD' : 0,
+    'latitudeDecimalDegrees' : 0,
+    'longitudeDecimalDegrees' : 0,
     'heading' : 0,
     'fix' : False,
-    'sats' : 0,
+    'numSattelites4fix' : 0,
     'knots' : 0
     }
+
+
+global NMEAmain
 
 
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to
 # loose data while processing it.
 
-def readGPSdataThread():
+# start: readGPSdata() thread ##################################################
+def readGPSdata():
     print("Thread Running")
     global keepRunning, NMEAdata # NMEAdata is a dictionary, like a map in c++
 
@@ -119,8 +130,9 @@ def readGPSdataThread():
             # we only read NMEA data when it's present in the buffer
             if GPS.any():
                 # Read one byte at a time, ie one char at a time till
-                # EOL, and decode it from a byte to a string using
-                # utf-8 codec(ASCII is a subset of UTF-8)
+                # EOL(in the while keepRunning loop), and decode it
+                # from a byte to a string using utf-8 codec(ASCII is a
+                # subset of UTF-8)
                 myChar=GPS.read(1).decode('utf-8')
                 # supress line feed, so you can contiue to read accross
                 # print(myChar, end="")
@@ -129,6 +141,9 @@ def readGPSdataThread():
                     # When EOL is reached strip the EOL char from myNMEA string.
                     myNMEA = myNMEA.strip() 
                     # store the NMEAdata strings into variables
+
+                    # gets characters 1 to 5 in the current NMEA string
+                    # (it skips index 0 and stops reading at character number 5)
                     if myNMEA[1:6] == "GPGGA":
                         GPGGA = myNMEA
                     if myNMEA[1:6] == "GPGSA":
@@ -153,97 +168,72 @@ def readGPSdataThread():
                             'GPVTG' : GPVTG
                         }
                         dataLock.release()
-                    
-            myNMEA = "" # reset to read the next NMEA data string
+
+                myNMEA = "" # reset to read the next NMEA data string
     print("Thread Terminated Cleanly")
-# end: gpsThread ###############################################################
+# end: readGPSdata() thread ####################################################
 
-# # do nothing if there is no data in the buffer
-# while not GPS.any():
-#     pass
-# # now we have data, read buffer till it's empty, the stale data
-# while GPS.any():
-#     junk=GPS.read()
-#     print(junk)
+# start: parseAndProcessGPSdata() function #####################################
+def parseAndProcessGPSdata():
+    
+    # Note that in the main.py  dictionary thread NMEdata is copied to
+    # NMEAmain  dictionary.  Process  the RAW  NMEA data  strings into
+    # human  readable values  and  store in  GPSdata dictionary.   The
+    # latitude and  longatude values are converted  to decimal degrees
+    # as this  is the  standard format used  by mapping  services like
+    # Google Maps, OpenStreetMap, etc.
+
+    
+    # Do we have a fix on the GPS module, 6th element in the NMEA
+    # GPGGA string
+    readFix=int(NMEAmain['GPGGA'].split(',')[6])
+    if readFix !=0:
+        GPSdata['fix'] = True
+
+        # Processing GPGGA NMEA string
+        #
+        # Our raw latitude value, 2nd element in the NMEA string
+        latitudeRAW = NMEAmain['GPGGA'].split(',')[2]
+        # latitude value in decimal degrees
+        latitudeDecimalDegrees=int(latitudeRAW[0:2])+ float(latitudeRAW[2:])/60
+        # What N/S hemisphere are we in and what is latitude in
+        # Decimal Degrees.
+        if NMEAmain['GPGGA'].split(',')[3] == 'S':
+            latitudeDecimalDegrees = -latitudeDecimalDegrees
+        GPSdata['latitudeDecimalDegrees']= latitudeDecimalDegrees
+
+        # Our raw longatude value
+        longitudeRAW=NMEAmain['GPGGA'].split(',')[4]
+        #longitude value in decimal degrees
+        longitudeDecimalDegrees=int(longitudeRAW[0:3]) + float(longitudeRAW[3:])/60
+        # What E/W hemisphere are we in and what is longitude in
+        # Decimal Degrees.
+        if NMEAmain['GPGGA'].split(',')[5] == 'W':
+            longitudeDecimalDegrees = -longitudeDecimalDegrees
+        GPSdata['longitudeDecimalDegrees'] = longitudeDecimalDegrees
+
+        # Number of sattilites used for fix 
+        numSattelites4fix = NMEAmain['GPGGA'].split(',')[7]
+        GPSdata['numSattelites4fix'] = numSattelites4fix
+
+        # Processing GPRMC NMEA string
+        #
+        # Direction the GPS reciver is moving over the ground(degrees)
+        # aka "course over groud (COG)". Measured in degrees from true
+        # north=0deg, east=90deg, south=180deg, west=270deg
+        heading = float(NMEAmain['GPRMC'].split(',')[8])
+        GPSdata['heading'] = heading
+
+        # Knot is a unit of speed of the GPS reciver is moving over
+        # the ground, 1 knot=1 nautical mile per hour aka speed over
+        # ground(knots). 1 knot = 1.852 km/h
+        knots = float(NMEAmain['GPRMC'].split(',')[7])
+        GPSdata['knots'] = knots
+
+        
 
 
-# # now we have new data
-# try:
-#     while True:
-#         # If any GPS signal exists, read a char/1 byte and print it
-#         if GPS.any():
-#             myChar=GPS.read(1).decode('utf-8')
-#             # supress line feed, so you can contiue to read accross
-#             # print(myChar, end="")
-#             myNMEA=myNMEA+myChar
-#             if myChar == '\n':
-#                 # process the entire NMEA sentence of characters
-#                 # ie 1 to 5, don't include 6
-#                 if myNMEA[1:6]=="GPGGA":
-#                     GPGGA=myNMEA
-#                     GPGGAarray=GPGGA.split(',')
-#                     # print(GPGGA)
-#                     # print(GPGGAarray)
-#                     # we have a sattilite fix ie this value is,1,2 or 3
-#                     if int(GPGGAarray[6]) != 0:
-#                         latRAW=GPGGAarray[2]
-#                         lonRAW=GPGGAarray[4]
-#                         # it's expected that the number of satellites
-#                         # will vary over time as they orbit twice per
-#                         # day
-#                         numSat=int(GPGGAarray[7])
-
-#                         # these are always +ve values for N and E but
-#                         # -ve for S and W
-#                         #
-#                         # converting RAW data to Decimal Degrees(ie
-#                         # DD) for latitude and longatude
-#                         #
-#                         # latRAW[0:2] means 1st and the 2nd num only,
-#                         # ie 0 and 1(not 2)
-#                         latDD=int(latRAW[0:2])+float(latRAW[2:])/60
-#                         lonDD=int(lonRAW[0:3])+float(lonRAW[3:])/60
-#                         # prime meridian runs through grenich in england
-#                         if GPGGAarray[3]=='S': # south of the equator
-#                             latDD=-latDD
-#                         if GPGGAarray[5]=='W': # west of the prime meridian
-#                             lonDD=-lonDD
-#                         print("Latitude, Longitude, numberOfSattilites",
-#                               latDD, lonDD, numSat)
-                            
-#                 if myNMEA[1:6]=="GPGSA":
-#                     GPGSA=myNMEA
-#                     GPGSAarray=GPGSA.split(',')
-#                      # print(GPGSA)
-#                     #print(GPGSAarray)
-#                 if myNMEA[1:6]=="GPRMC":
-#                     GPRMC=myNMEA
-#                     GPRMCarray=GPRMC.split(',')
-#                     #print(GPRMC)
-#                     #print(GPRMCarray)
-#                     knots=float(GPRMCarray[7]) # how fast we are moving
-#                     heading=float(GPRMCarray[8]) # angle from north clockwise we are moving to
-#                     print(knots, "Knots at a Heading of: ",heading)
-#                 if myNMEA[1:6]=="GPVTG":
-#                     GPVTG=myNMEA
-#                     GPVTGarray=GPVTG.split(',')
-#                     #print(GPVTG)
-#                     #print(GPVTGarray)
-#                 if myNMEA[1:6]=="GPGSV":
-#                     GPGSV=myNMEA
-#                     GPGSVarray=GPGSV.split(',')
-#                     #print(GPGSV)
-#                     #print(GPGSVarray)
-#                     if GPGGA!="":
-#                         # if the number of sattellites for no fix=0
-#                         if int(GPGGAarray[6])==0:
-#                             # as more sattellites come in to view they
-#                             # are logged here. So we can see it's
-#                             # progressing towards a fix.
-#                             print('Aquiring Fix:', GPGSVarray[3], "Sattellites in View")
-                    
-#                 # reset for next NEMA sentence
-#                 myNMEA=""
+# end: parseAndProcessGPSdata() function #######################################
 
 
 
@@ -251,24 +241,29 @@ def readGPSdataThread():
 #                                   main.cpp                                  #
 ###############################################################################
 
-# launch the reading data thread
-_thread.start_new_thread(readGPSdataThread, ())
+# launch the reading data thread readGPSdata()
+_thread.start_new_thread(readGPSdata, ())
 time.sleep(2)
 try:
     while True:
-        # dataLock.acquire()
-        # NMEAmain = NMEAdata.copy()
-        # dataLock.release()
-        # #parseGPS()
-        # if GPSdata['fix'] == False:
-        #     print("Waiting for Fix . . .")
-        # if GPSdata['fix'] == True:
-        #     print(" Ultimate GPS Tracker Report: ")
-        #     print("Lat and Lon: ",GPSdata['latDD'],GPSdata['lonDD'])
-        #     print("Knots: ",GPSdata['knots'])
-        #     print("Heading: ",GPSdata['heading'])
-        #     print("Sats: ",GPSdata['sats'])
-        #     print()
+        # You need to acquire the lock as readGPSdata() thread may be
+        # using NMEAdata dictionary.  That is populating NMEAdata with
+        # GPS reciver UART string values.
+        dataLock.acquire()
+        NMEAmain = NMEAdata.copy()
+        dataLock.release()
+        parseAndProcessGPSdata()
+        if GPSdata['fix'] == False:
+            print("Waiting for Fix . . .")
+        if GPSdata['fix'] == True:
+            print(" We have a satellite fix, Ultimate GPS Tracker Report: ")
+            print("Latitude and Longitude: ",
+                  GPSdata['latitudeDecimalDegrees'],
+                  GPSdata['longitudeDecimalDegrees'])
+            print("Knots: ",GPSdata['knots'])
+            print("Heading: ",GPSdata['heading'])
+            print("NumSattelites4fix: ",GPSdata['numSattelites4fix'])
+            print()
  
         time.sleep(10)
         
