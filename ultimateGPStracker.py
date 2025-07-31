@@ -257,7 +257,7 @@ try:
         if GPSdata['fix'] == False:
             print("Waiting for Fix . . .")
         if GPSdata['fix'] == True:
-            print(" We have a satellite fix, Ultimate GPS Tracker Report: ")
+            print("We have a satellite fix, Ultimate GPS Tracker Report: ")
             print("Latitude and Longitude: ",
                   GPSdata['latitudeDecimalDegrees'],
                   GPSdata['longitudeDecimalDegrees'])
