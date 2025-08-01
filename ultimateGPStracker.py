@@ -223,6 +223,10 @@ def parseAndProcessGPSdata():
         # Processing GPGGA NMEA string
         #
         # Our raw latitude value, 2nd element in the NMEA string
+
+        # .split() splits splits the NMEA string into a list of
+        # fields, using the comma as a delimiter.  The grabs the third
+        # element from the NMEA string.
         latitudeRAW = NMEAmain['GPGGA'].split(',')[2]
         # latitude value in decimal degrees
         latitudeDecimalDegrees=int(latitudeRAW[0:2])+ float(latitudeRAW[2:])/60
