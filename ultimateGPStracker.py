@@ -64,6 +64,32 @@ import _thread
 # create GPS object
 GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
 
+# By default the  adafruit ultimate GPS reciver only  outputs a subset
+# of NMEA sentences. GPVTG is disabled by default to reduce bandwidth.
+# The  following line  ensures that  the  GPS reports  the GPVTG  NMEA
+# sentence.   You only  need to  do  this once  so you  don't have  to
+# include it in  further code.  That is, it permanantly  sets your GPS
+# reciver to output GPVTG NMEA strings.
+
+# $PMTK314,<sentence mask>*<checksum><CR><LF>
+#
+#
+# Here is an explanation of each of the fields/sentences that can be
+# enabled/disabled with the PMTK314 command.
+
+#$PMTK314,<GLL>,<RMC>,<VTG>,<GGA>,<GSA>,<GSV>,<GRS>,<GST>,<MALM>,<MEPH>,<MDGP>,<MDBG>,<ZDA>,0,0,0,0,0,0*<Checksum>
+
+# Even with a  fix, if the GPS is not  moving, some firmware revisions
+# suppress GPVTG  because heading/course is undefined  when velocity ≈
+# 0.  So we may remove this later anyhow???
+
+# Some MTK3339 firmware  builds (the chipset in  Adafruit Ultimate GPS
+# v3) are compiled with different  defaults.  If you’re using an older
+# breakout  or  firmware  revision,  the  sentence  set  might  differ
+# slightly, requiring explicit configuration.
+
+GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+
 # create the atomic lock in python, in c++ we put dataLock definition
 # in header file.
 dataLock = _thread.allocate_lock()
@@ -84,7 +110,7 @@ NMEAdata = {
     'GPGSA' : "",
     'GPRMC' : "",
     'GPVTG' : ""
-    }
+}
 
 # interpreted GPS UART data output lines/NMEAdata data lines into a
 # dictionary of key,value pairs.  key=string, value=integer
@@ -95,7 +121,7 @@ GPSdata = {
     'fix' : False,
     'numSattelites4fix' : 0,
     'knots' : 0
-    }
+}
 
 
 
@@ -138,6 +164,9 @@ def readGPSdata():
             if myChar == '\n':
                 # When EOL is reached strip the EOL char from myNMEA string.
                 myNMEA = myNMEA.strip()
+                # to see what NMEA data I am getting as initially we
+                # weren't getting GPVTG data
+                #print(myNMEA)
                 # store the NMEAdata strings into variables
 
                 # gets characters 1 to 5 in the current NMEA string
@@ -154,7 +183,8 @@ def readGPSdata():
                 # if _all_  the NMEA data is  present populate the
                 # dictionary  NMEAdata. ie  setup the  map between
                 # key=type of NMEA string = string of data
-                if GPGGA != "" and GPGSA!="" and GPRMC!="": # and GPVTG!="":
+                #
+                if GPGGA != "" and GPGSA!="" and GPRMC!="" and GPVTG!="":
                     # we must do this within a lock as other
                     # threads may want to access the NMEAdata
                     # dictionary elements at the same time
@@ -230,9 +260,6 @@ def parseAndProcessGPSdata():
         knots = float(NMEAmain['GPRMC'].split(',')[7])
         GPSdata['knots'] = knots
 
-        
-
-
 # end: parseAndProcessGPSdata() function #######################################
 
 
@@ -259,14 +286,17 @@ try:
         if GPSdata['fix'] == True:
             print("We have a satellite fix, Ultimate GPS Tracker Report: ")
             print("Latitude and Longitude: ",
-                  GPSdata['latitudeDecimalDegrees'],
-                  GPSdata['longitudeDecimalDegrees'])
-            print("Knots: ",GPSdata['knots'])
-            print("Heading: ",GPSdata['heading'])
-            print("NumSattelites4fix: ",GPSdata['numSattelites4fix'])
+            GPSdata['latitudeDecimalDegrees'],
+            GPSdata['longitudeDecimalDegrees'])
+            print("Knots: ", GPSdata['knots'])
+            print("Heading: ", GPSdata['heading'])
+            print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
             print()
- 
+
+        # NOTE: this does not overflow the buffer as readGPSdata()
+        # executes in another thread.
         time.sleep(10)
+         
         
 # This MicroPython code block is part of an except clause that handles
 # a KeyboardInterrupt — typically triggered when you press Ctrl+C on
