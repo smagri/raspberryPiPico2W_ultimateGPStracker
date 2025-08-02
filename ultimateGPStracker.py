@@ -280,7 +280,8 @@ def parseAndProcessGPSdata():
 
 # launch the reading data thread readGPSdata()
 _thread.start_new_thread(readGPSdata,())
-time.sleep(2)
+time.sleep(2) # so we don't start reading data till there is some in
+              # the UART buffer
 try:
     while True:
         # You need to acquire the lock as readGPSdata() thread may be
@@ -293,11 +294,20 @@ try:
         parseAndProcessGPSdata()
         if GPSdata['fix'] == False:
             print("Waiting for Fix . . .")
-        if GPSdata['fix'] == True:
+        else:
+            # we have a fix
+
+            # NOTE, the  more sattilites we  get for our fix  the more
+            # accurate the  position, ie latitude and  longitude.  You
+            # can verify this on google earth or openstreetmap.
+            
             print("We have a satellite fix, Ultimate GPS Tracker Report: ")
+            # we extract latitude and longitude in the format of
+            # openstreetmap and google earth
             print("Latitude and Longitude: ",
             GPSdata['latitudeDecimalDegrees'],
             GPSdata['longitudeDecimalDegrees'])
+            
             print("Knots: ", GPSdata['knots'])
             print("Heading: ", GPSdata['heading'])
             print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
@@ -307,7 +317,7 @@ try:
         # executes in another thread.
         time.sleep(10)
          
-        
+
 # This MicroPython code block is part of an except clause that handles
 # a KeyboardInterrupt — typically triggered when you press Ctrl+C on
 # your keyboard to stop a running script.
