@@ -1,5 +1,5 @@
 19jul2025
-upates:
+updates:
 26jul2025
 
 This  project follows  Paul McWhorter  youtube videos  to build  a GPS
@@ -118,4 +118,14 @@ mpremote + rshell for CLI tools
 PyCharm (with some setup)
 
 
+Installing the ssd1306.py, the ssd1306 driver for the OLED
+----------------------------------------------------------
 
+Get the current version from the github repository:
+https://github.com/micropython/micropython-lib/blob/master/micropython/drivers/display/ssd1306/ssd1306.py?utm_source=chatgpt.com
+
+Copy it into the directory where your main.py file is, in our case
+ultimateGPStracker.py is our main.py.
+
+File->Save As and SELECT 'Raspberry Pi Pico' (not 'This Computer') to
+write this driver into the pico's filesystem.

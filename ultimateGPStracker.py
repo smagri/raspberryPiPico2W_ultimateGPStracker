@@ -56,10 +56,29 @@
 # longatude E/W 1st three  digits are degrees, rest is decimal minutes.
 
 
+# OLED display is an Hosyond 0.96  Inch OLED I2C Display Module 128x64
+# Pixel  Screen IIC  Serial Mini  Self-Luminous Board  Compatible With
+# Arduino Raspberry  PI (Blue and Yellow).   On the back of  the board
+# there is  an address selector, in  this case a resistor  for address
+# 0x3C.  However, it can be configured for address 0x30 also.
+
+# circuit diagram https://toptechboy.com/wp-content/uploads/2025/06/gps-OLED.jpg
+#
+# Since pico is a 3.3V device 3.3V needs to be used to power I2C
+# devices.
 
 from machine import Pin, I2C, UART
 import time
 import _thread
+from ssd1306 import SSD1306_I2C
+
+# create i2c2 object: 
+# Configure I2C on BUS1, GP2 = SDA, GP3 = SCL
+# NOTE: use i2cObj instead of i2c as i2c may be a reserved word
+i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
+
+# create display object: 128x64=columnsXlines
+display = SSD1306_I2C(123, 64, i2cObj)
 
 # create GPS object
 GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
@@ -201,7 +220,10 @@ def readGPSdata():
     print("Thread Terminated Cleanly")  
 # end: readGPSdata() thread ####################################################
 
-# start: parseAndProcessGPSdata() function #####################################
+
+
+# user defined functions #######################################################
+
 def parseAndProcessGPSdata():
     
     # Note that in the main.py  dictionary thread NMEdata is copied to
@@ -273,7 +295,24 @@ def parseAndProcessGPSdata():
 # end: parseAndProcessGPSdata() function #######################################
 
 
+def displayOLED():
 
+    # display the following on the OLED
+    
+    display.fill(0) # blank it out
+    if GPSdata['fix'] == False:
+        # we don't have a fixed
+        
+        # display.text(text, column, row) where 0,0 is the top left
+        # hand corner of the display
+        display.text("Waiting for a fix ...", 0, 0)
+    else:
+        # we have a fix 
+        display.text("ULTIMATE GPS: ", 0, 0)
+        display.text("Latitude: " + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
+        
+        
+    display.show()
 ###############################################################################
 #                                   main.cpp                                  #
 ###############################################################################
@@ -313,10 +352,11 @@ try:
             print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
             print()
 
+        displayOLED()
         # NOTE: this does not overflow the buffer as readGPSdata()
         # executes in another thread.
         time.sleep(10)
-         
+
 
 # This MicroPython code block is part of an except clause that handles
 # a KeyboardInterrupt — typically triggered when you press Ctrl+C on
@@ -340,6 +380,10 @@ except KeyboardInterrupt: # catches the Keyboardinterrupt exception to
     GPS.deinit() # properly release UART before exit
 
 #    time.sleep(1) # short pause to ensure clean shutdown        
+
+    # blank the OLED screen, ready for next display output
+    display.fill(0)
+    display.show()
 
     print("Exited Cleanly")
      
