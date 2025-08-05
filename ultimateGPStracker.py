@@ -85,7 +85,7 @@ from ssd1306 import SSD1306_I2C
 i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
 
 # create display object: 128x64=columnsXlines
-display = SSD1306_I2C(123, 64, i2cObj)
+display = SSD1306_I2C(128, 64, i2cObj)
 
 # create GPS object
 GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
@@ -312,7 +312,7 @@ def displayOLED():
         
         # display.text(text, column, row) where 0,0 is the top left
         # hand corner of the display
-        display.text("Wait for a fix ...", 0, 0)
+        display.text("Wait for fix...", 0, 0)
     else:
         # we have a fix 
         display.text("ULTIMATE GPS: ", 0, 0)
