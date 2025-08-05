@@ -46,6 +46,7 @@ Breadboard and Wires (If You Don’t Have):
 https://amzn.to/4kggv86
 
 
+
 Programming the raspberry Pi Pico 2:
 -----------------------------------
 
@@ -64,8 +65,12 @@ should get the miropython prompt.
 Test with:
 print("hello").
 
+
+
 Why  use thonny  editor as  the default  editor for  rasberry pi  pico
+-------------------------------------------------------------------------
 projects:  I  use  emacs  for  editing  and  thonny  for  running  the
+-------------------------------------------------------------------------
 micropython scripts.
 -------------------------------------------------------------------------
 
@@ -118,6 +123,7 @@ mpremote + rshell for CLI tools
 PyCharm (with some setup)
 
 
+
 Installing the ssd1306.py, the ssd1306 driver for the OLED
 ----------------------------------------------------------
 
@@ -130,3 +136,9 @@ ultimateGPStracker.py is our main.py.
 
 File->Save As and SELECT 'Raspberry Pi Pico' (not 'This Computer') to
 write this driver into the pico's filesystem.
+
+
+
+Howto display on the ssd1306 OLED
+---------------------------------
+https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html

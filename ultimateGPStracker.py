@@ -72,8 +72,15 @@ import time
 import _thread
 from ssd1306 import SSD1306_I2C
 
-# create i2c2 object: 
-# Configure I2C on BUS1, GP2 = SDA, GP3 = SCL
+# create i2c2 object:
+
+# Configure  I2C  on   BUS=1  of  the  raspberry   pi  pico.   Default
+# address=0x3C, GP2  = SDA, GP3  = SCL,  clock frequency is  400kHz, a
+# common fast i2c speed, aka Fast Mode.  Standard speed is 100kHz.
+
+# NOTE: the address of  the OLED is indicated at the  back of the PCB,
+# with a resistor accross two pins to indicate the address
+
 # NOTE: use i2cObj instead of i2c as i2c may be a reserved word
 i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
 
@@ -297,7 +304,7 @@ def parseAndProcessGPSdata():
 
 def displayOLED():
 
-    # display the following on the ssd1306 OLED
+    # display the following GPS data on the ssd1306 OLED
     
     display.fill(0) # blank it out
     if GPSdata['fix'] == False:
@@ -305,7 +312,7 @@ def displayOLED():
         
         # display.text(text, column, row) where 0,0 is the top left
         # hand corner of the display
-        display.text("Waiting for a fix ...", 0, 0)
+        display.text("Wait for a fix ...", 0, 0)
     else:
         # we have a fix 
         display.text("ULTIMATE GPS: ", 0, 0)
@@ -357,7 +364,8 @@ try:
             print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
             print()
 
-        # send the data to the sdd1306 OLED display    
+        # Send the data to the sdd1306 OLED display.  That is write
+        # the contents of the FrameBuffer to display memory
         displayOLED()
         
         # NOTE: this does not overflow the buffer as readGPSdata()
