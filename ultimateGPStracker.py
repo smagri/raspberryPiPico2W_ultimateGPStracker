@@ -297,7 +297,7 @@ def parseAndProcessGPSdata():
 
 def displayOLED():
 
-    # display the following on the OLED
+    # display the following on the ssd1306 OLED
     
     display.fill(0) # blank it out
     if GPSdata['fix'] == False:
@@ -309,10 +309,15 @@ def displayOLED():
     else:
         # we have a fix 
         display.text("ULTIMATE GPS: ", 0, 0)
-        display.text("Latitude: " + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
+        display.text("Lat:" + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
+        display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 26)
+        display.text("Speed:" + str(GPSdata['knots']) + 'knots', 0 ,36)
+        display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 46)
+        display.text("Num Fix Sats:" + str(GPSdata['numSattelites4fix']), 0, 56)
         
-        
+    # visulise the display text on the OLED
     display.show()
+
 ###############################################################################
 #                                   main.cpp                                  #
 ###############################################################################
@@ -352,7 +357,9 @@ try:
             print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
             print()
 
+        # send the data to the sdd1306 OLED display    
         displayOLED()
+        
         # NOTE: this does not overflow the buffer as readGPSdata()
         # executes in another thread.
         time.sleep(10)

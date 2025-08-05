@@ -121,8 +121,9 @@ PyCharm (with some setup)
 Installing the ssd1306.py, the ssd1306 driver for the OLED
 ----------------------------------------------------------
 
-Get the current version from the github repository:
-https://github.com/micropython/micropython-lib/blob/master/micropython/drivers/display/ssd1306/ssd1306.py?utm_source=chatgpt.com
+Get the current version of the ssd1306 driver from the github repository:
+
+https://github.com/micropython/micropython-lib/blob/master/micropython/drivers/display/ssd1306/ssd1306.py
 
 Copy it into the directory where your main.py file is, in our case
 ultimateGPStracker.py is our main.py.
