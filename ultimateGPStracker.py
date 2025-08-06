@@ -72,6 +72,10 @@ import time
 import _thread
 from ssd1306 import SSD1306_I2C
 
+ # UTC offset for Sydney in Australia, outside daylight saving time.
+ # For daylight saving time the utcOffset=11;
+utcOffset = 10;
+
 # create i2c2 object:
 
 # Configure  I2C  on   BUS=1  of  the  raspberry   pi  pico.   Default
@@ -146,7 +150,9 @@ GPSdata = {
     'heading' : 0,
     'fix' : False,
     'numSattelites4fix' : 0,
-    'knots' : 0
+    'knots' : 0,
+    'time' : '00:00:00',
+    'date' : '00/00/0000'
 }
 
 
@@ -299,7 +305,21 @@ def parseAndProcessGPSdata():
         knots = float(NMEAmain['GPRMC'].split(',')[7])
         GPSdata['knots'] = knots
 
+        # convert UTS date and time to local clock date and time, including
+        # offest for daylight saving or not
+        utcTime = NMEAmain['GPGGA'].split(',')[1]
+        utcDate = NMEAmain['GPRMC'].split(',')[9]
+
+        time, date = UTCtoLocalDateAndTime(utcTime, utcDate)
+        
+        # Store local time in GPSdata dictionary
+        GPSdata['time'] = time
+        # Store local date in GPSdata dictionary
+        GPSdata['date'] = date
+
+        
 # end: parseAndProcessGPSdata() function #######################################
+
 
 
 def displayOLED():
@@ -315,15 +335,52 @@ def displayOLED():
         display.text("Wait for fix...", 0, 0)
     else:
         # we have a fix 
-        display.text("ULTIMATE GPS: ", 0, 0)
+        #display.text("ULTIMATE GPS: ", 0, 0)
+        #display.text(GPSdata['date'][0:5] + "/" + GPSdata['date'][8:]
+        #             + ' ' + GPSdata['time'], 0, 0)
+        display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
+        #display.text(GPSdata['date'] + ' ' + GPSdata['time'], 0, 0)
         display.text("Lat:" + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
         display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 26)
-        display.text("Speed:" + str(GPSdata['knots']) + 'knots', 0 ,36)
+        display.text("Speed:" + str(GPSdata['knots']) + 'knots', 0, 36)
         display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 46)
         display.text("Num Fix Sats:" + str(GPSdata['numSattelites4fix']), 0, 56)
         
     # visulise the display text on the OLED
     display.show()
+
+
+# in micropython/python all fn parameters are inputs, return outputs
+# with return statement
+def UTCtoLocalDateAndTime(utcTime, utcDate):
+        # utcTime = "013445.000"
+        # utcDate = "010125"
+
+        # Extract year from UTC date (format: DDMMYY), prepend '20'
+        # for full year (e.g., '25' → '2025')
+        year = '20' + utcDate[4:]
+        # Extract month from UTC date (e.g., '01' for January)
+        month = utcDate[2:4]
+        # Extract day from UTC date (e.g., '01' for 1st)
+        day = utcDate[0:2]
+        # Calculate hours by adding UTC offset to UTC hours, convert to string
+        hour = str(int(utcTime[0:2]) + utcOffset)
+        # Extract minutes from UTC time (e.g., '34' from '013445.000')
+        minute = utcTime[2:4]
+        # Extract seconds from UTC time (e.g., '45' from '013445.000')
+        second = utcTime[4:6]
+
+        #print("dbg: UTStoLocalDateAndTime: {:04}-{:02}-{:02} {:02}:{:02}:{:02}"
+        #.format(year, month, day, hour, minute, second))
+
+        # Combine hours, minutes, seconds into time string (e.g., '20:34:45')
+        time = hour + ':' + minute + ':' + second
+        # Combine month, day, year into date string (e.g., '12/31/2024')
+        date = day + '/' + month + '/' + year
+
+        return time, date
+
+
 
 ###############################################################################
 #                                   main.cpp                                  #
@@ -362,6 +419,8 @@ try:
             print("Knots: ", GPSdata['knots'])
             print("Heading: ", GPSdata['heading'])
             print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
+            print("Time:", GPSdata['time'])
+            print("Date:", GPSdata['date'])
             print()
 
         # Send the data to the sdd1306 OLED display.  That is write

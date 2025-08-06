@@ -113,7 +113,7 @@ tutorials  because  it aligns  with  their  goal of  making  computing
 education accessible.
 
 
-Alternatives Exist (for more advanced users)
+Alternatives Exist (for more anced users)
 While Thonny is ideal for beginners, advanced users sometimes prefer:
 
 VS Code (with the Pico-Go extension)
