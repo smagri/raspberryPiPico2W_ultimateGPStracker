@@ -74,7 +74,7 @@ from ssd1306 import SSD1306_I2C
 
  # UTC offset for Sydney in Australia, outside daylight saving time.
  # For daylight saving time the utcOffset=11;
-utcOffset = 10;
+utcOffset = 10
 
 # create i2c2 object:
 
@@ -310,7 +310,7 @@ def parseAndProcessGPSdata():
         utcTime = NMEAmain['GPGGA'].split(',')[1]
         utcDate = NMEAmain['GPRMC'].split(',')[9]
 
-        time, date = UTCtoLocalDateAndTime(utcTime, utcDate)
+        time, date = UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset)
         
         # Store local time in GPSdata dictionary
         GPSdata['time'] = time
@@ -350,33 +350,140 @@ def displayOLED():
     display.show()
 
 
+
+def is_leap_year(year):
+    # Leap year rule: divisible by 4, but centuries must be divisible by 400
+    # This matches the exact Gregorian calendar rule.
+    
+    #return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+    if year % 400 == 0:
+        # Divisible by 400 → leap year
+        leap = True
+    elif year % 100 == 0:
+        # Divisible by 100 but not 400 → not a leap year
+        leap = False
+    elif year % 4 == 0:
+        # Divisible by 4 but not 100 → leap year
+        leap = True
+    else:
+        # All other years → not a leap year
+        leap = False
+
+    if leap:
+        return 1
+    else:
+        return 0
+
+
+
 # in micropython/python all fn parameters are inputs, return outputs
 # with return statement
-def UTCtoLocalDateAndTime(utcTime, utcDate):
-        # utcTime = "013445.000"
-        # utcDate = "010125"
+def UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset):
 
+        # utcTime="054946.000", utcDate="090825"
+        # print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
+
+        # Convert the UTC time from the NMEA sentence into local time.
+        # This  code  caters  for  positive and  negative  UTC  offest
+        # values.   It  does not  cater  for  partial hours,  that  is
+        # minutes.  Where UTC offset is a float value.
+    
+
+        # Convert all  the NMEA string  data into integers  for easier
+        # calculations, then reconstruct the string at the end.
+    
         # Extract year from UTC date (format: DDMMYY), prepend '20'
         # for full year (e.g., '25' → '2025')
-        year = '20' + utcDate[4:]
+        year = 2000 + int(utcDate[4:])
         # Extract month from UTC date (e.g., '01' for January)
-        month = utcDate[2:4]
+        month = int(utcDate[2:4])
         # Extract day from UTC date (e.g., '01' for 1st)
-        day = utcDate[0:2]
-        # Calculate hours by adding UTC offset to UTC hours, convert to string
-        hour = str(int(utcTime[0:2]) + utcOffset)
-        # Extract minutes from UTC time (e.g., '34' from '013445.000')
-        minute = utcTime[2:4]
-        # Extract seconds from UTC time (e.g., '45' from '013445.000')
-        second = utcTime[4:6]
+        day = int(utcDate[0:2])
 
-        #print("dbg: UTStoLocalDateAndTime: {:04}-{:02}-{:02} {:02}:{:02}:{:02}"
-        #.format(year, month, day, hour, minute, second))
+        # Determine correct UTC offset for Sydney Australia.
+
+        # UTC offset for Sydney based on the current date using the
+        # known DST rules.
+
+        # Sydney Daylight Saving Rules (as of 2025):
+        # Starts: First Sunday in October
+        # Ends: First Sunday in April
+        # DST offset: UTC+11
+        # Standard time: UTC+10
+
+        # utcOffset as an integer = curUTCcOffsetSydneyAustralia()
+
+        # Calculate hours by adding UTC offset to UTC hours, convert to string
+        hour = int(utcTime[0:2]) + utcOffset
+        # Extract minutes from UTC time (e.g., '34' from '013445.000')
+        minute = int(utcTime[2:4])
+        # Extract seconds from UTC time (e.g., '45' from '013445.000')
+        second = int(utcTime[4:6])
+
+
+        # Now correct for positive and negative utcOffset, leap years
+        # and day/month/year rollovers.
+
+        # Maximum Days in each month (adjust February for leap year) ---
+        monthDays = [31, 28 + is_leap_year(year), 31, 30, 31, 30,
+                      31, 31, 30, 31, 30, 31]
+
+        # --- 4. Adjust forward in time if hour >= 24 ---
+        while hour >= 24:
+            hour -= 24
+            day += 1
+            # If day goes past the end of the month → move to next month
+            if day > monthDays[month - 1]:
+                day = 1
+                month += 1
+                # If month goes past December → move to January of next year
+                if month > 12:
+                    month = 1
+                    year += 1
+                # Update February days for new year
+                monthDays[1] = 28 + is_leap_year(year)
+
+         
+        # --- 5. Adjust backward in time if hour < 0 ---
+        while hour < 0:
+            hour += 24
+            day -= 1
+            # If day goes before the start of the month → move to
+            # previous month
+            if day < 1:
+                month -= 1
+                # If month goes before January → move to December of
+                # previous year
+                if month < 1:
+                    month = 12
+                    year -= 1
+                # Update February days for new year
+                monthDays[1] = 28 + is_leap_year(year)
+                # Set day to last day of the new month
+                day = monthDays[month - 1]
+                
+
+         # --- 6. Format date/time strings with leading zeros if necessary ---
+        time = f"{hour:02d}:{minute:02d}:{second:02d}" # "03:07:05"
+        date = f"{day:02d}/{month:02d}/{year}"         #"09/08/2025"      
+        # f"..." → f-string syntax; lets you put variables directly inside {}.
+        # {hour:02d} → format specifier:
+        # 02 → pad the number with zeros so it’s at least 2 digits wide.
+        # d → treat the value as an integer (decimal).
+        # The result will always be two digits, e.g.:
+        # 3 → "03"
+        # 15 → "15"
+        # So if hour = 3, minute = 7, second = 5,
+        # time will be "03:07:05".
+
+        # However, older C style method is still widely used
+        # time = "%02d:%02d:%02d" % (hour, minute, second)
+        
 
         # Combine hours, minutes, seconds into time string (e.g., '20:34:45')
-        time = hour + ':' + minute + ':' + second
+        #time = hour + ':' + minute + ':' + second
         # Combine month, day, year into date string (e.g., '12/31/2024')
-        date = day + '/' + month + '/' + year
+        #date = day + '/' + month + '/' + year
 
         return time, date
 
