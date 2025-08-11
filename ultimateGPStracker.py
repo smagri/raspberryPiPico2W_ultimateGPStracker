@@ -143,7 +143,8 @@ NMEAdata = {
 }
 
 # interpreted GPS UART data output lines/NMEAdata data lines into a
-# dictionary of key,value pairs.  key=string, value=integer
+# dictionary of key,value pairs.  key=string, value=integer or string
+# here
 GPSdata = {
     'latitudeDecimalDegrees' : 0,
     'longitudeDecimalDegrees' : 0,
@@ -152,10 +153,11 @@ GPSdata = {
     'numSattelites4fix' : 0,
     'knots' : 0,
     'time' : '00:00:00',
-    'date' : '00/00/0000'
+    'date' : '00/00/0000',
+    'altitude' : 0,
+    'geoid' : 0,
+    'trueAltitude' : 0
 }
-
-
 
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to
@@ -191,7 +193,7 @@ def readGPSdata():
             # subset of UTF-8)
             myChar=GPS.read(1).decode('utf-8')
             # supress line feed, so you can contiue to read accross
-            # print(myChar, end="")
+            #print(myChar, end="")
             myNMEA+=myChar
             if myChar == '\n':
                 # When EOL is reached strip the EOL char from myNMEA string.
@@ -212,7 +214,7 @@ def readGPSdata():
                 if myNMEA[1:6] == "GPVTG":
                     GPVTG = myNMEA
 
-                # if _all_  the NMEA data is  present populate the
+                # if _all_  the NMEA ata is  present populate the
                 # dictionary  NMEAdata. ie  setup the  map between
                 # key=type of NMEA string = string of data
                 #
@@ -303,6 +305,8 @@ def parseAndProcessGPSdata():
         # the ground, 1 knot=1 nautical mile per hour aka speed over
         # ground(knots). 1 knot = 1.852 km/h
         knots = float(NMEAmain['GPRMC'].split(',')[7])
+        knots *= 1.852 # convert to km/h
+        knots = round(knots, 3) # round the number to 3 decimal places
         GPSdata['knots'] = knots
 
         # convert UTS date and time to local clock date and time, including
@@ -317,7 +321,25 @@ def parseAndProcessGPSdata():
         # Store local date in GPSdata dictionary
         GPSdata['date'] = date
 
+        altitude = float(NMEAmain['GPGGA'].split(',')[9])
+        geoid = float(NMEAmain['GPGGA'].split(',')[11])
+        # true altitude = altitude above elipsoid - difference above the
+        # elipsoid and actual altitude above sea level
+        trueAltitude = altitude - geoid
+
+        # altitude is hight above sea level
+        GPSdata['altitude'] = altitude
+        GPSdata['geoid'] = geoid
+        GPSdata['trueAltitude'] = trueAltitude
         
+        # print("GPRMC:", NMEAmain['GPRMC'])
+        # magVar = NMEAmain['GPRMC'].split(',')[10]
+        # print("magVar", magVar)
+        # magDir = NMEAmain['GPRMC'].split(',')[11]
+        # print("magDir", magDir)
+        # GPSdata['Mag VarDir'] = magVar
+        
+                
 # end: parseAndProcessGPSdata() function #######################################
 
 
@@ -338,14 +360,22 @@ def displayOLED():
         #display.text("ULTIMATE GPS: ", 0, 0)
         #display.text(GPSdata['date'][0:5] + "/" + GPSdata['date'][8:]
         #             + ' ' + GPSdata['time'], 0, 0)
-        display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
-        #display.text(GPSdata['date'] + ' ' + GPSdata['time'], 0, 0)
-        display.text("Lat:" + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
-        display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 26)
-        display.text("Speed:" + str(GPSdata['knots']) + 'knots', 0, 36)
-        display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 46)
-        display.text("Num Fix Sats:" + str(GPSdata['numSattelites4fix']), 0, 56)
         
+        # display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
+        # #display.text(GPSdata['date'] + ' ' + GPSdata['time'], 0, 0)
+        # display.text("Lat:" + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
+        # display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 26)
+        # display.text("Speed:" + str(GPSdata['knots']) + 'knots', 0, 36)
+        # display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 46)
+        # display.text("Num Fix Sats:" + str(GPSdata['numSattelites4fix']), 0, 56)
+        display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
+        display.text("Num Fix Sats:" + str(GPSdata['numSattelites4fix']), 0, 8)
+        display.text("Lat:" + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
+        display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 24)
+        display.text("Speed:" + str(GPSdata['knots']) + 'km/h', 0, 32)
+        display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 40)
+        display.text("Altitude:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
+        #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
     # visulise the display text on the OLED
     display.show()
 
@@ -381,7 +411,7 @@ def is_leap_year(year):
 def UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset):
 
         # utcTime="054946.000", utcDate="090825"
-        # print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
+        print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
 
         # Convert the UTC time from the NMEA sentence into local time.
         # This  code  caters  for  positive and  negative  UTC  offest
@@ -528,11 +558,14 @@ try:
             print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
             print("Time:", GPSdata['time'])
             print("Date:", GPSdata['date'])
+            print("Altitude:", GPSdata['trueAltitude'])
+            #print("Mag VarDir", GPSdata['Mag VarDir'])
             print()
 
         # Send the data to the sdd1306 OLED display.  That is write
         # the contents of the FrameBuffer to display memory
         displayOLED()
+        time.sleep(1)
         
         # NOTE: this does not overflow the buffer as readGPSdata()
         # executes in another thread.
