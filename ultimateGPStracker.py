@@ -272,7 +272,7 @@ def parseAndProcessGPSdata():
         # int() converts the first two characters to an integer
         #
         # latitude value in decimal degrees
-        latitudeDecimalDegrees=int(latitudeRAW[0:2])+ float(latitudeRAW[2:])/60
+        latitudeDecimalDegrees=int(latitudeRAW[0:2]) + float(latitudeRAW[2:])/60
         # What N/S hemisphere are we in and what is latitude in
         # Decimal Degrees.
         if NMEAmain['GPGGA'].split(',')[3] == 'S':
@@ -295,9 +295,12 @@ def parseAndProcessGPSdata():
 
         # Processing GPRMC NMEA string
         #
+        
         # Direction the GPS reciver is moving over the ground(degrees)
         # aka "course over groud (COG)". Measured in degrees from true
-        # north=0deg, east=90deg, south=180deg, west=270deg
+        # north=0deg, east=90deg, south=180deg, west=270deg.  True north
+        # is at the north pole, magnetic north is what your compass
+        # points to .
         heading = float(NMEAmain['GPRMC'].split(',')[8])
         GPSdata['heading'] = heading
 
@@ -331,6 +334,45 @@ def parseAndProcessGPSdata():
         GPSdata['altitude'] = altitude
         GPSdata['geoid'] = geoid
         GPSdata['trueAltitude'] = trueAltitude
+
+        # ##############################################################
+        # Trying  to  get  Magnetic  Variation  and  Magnetic  Variation
+        # Direction.  However,  the datasheet for the  adafruit ultimate
+        # GPS version 3 does not output this data.
+        ################################################################
+
+        # Magnetic variation is the angle difference between true north
+        # and magnetic north at a specific place and time.
+
+        # True north  → the direction  along Earth’s surface  toward the
+        # geographic North Pole.
+
+        # Magnetic north → the direction your compass points, toward the
+        # Earth’s magnetic north pole (which moves over time).
+
+        # Magnetic Variation Direction +ve/E, magnetic north is east of
+        # true north. -ve/W, magnetic north is wet of true north.
+
+        # Variation changes  with location because the  earth's magnetic
+        # field isn't  uniform.  Example,  Sydney, AU  in 2025  → ~12.2°
+        # East.
+
+        # Magnetic variation (and its  east/west direction) is important
+        # because it’s the correction factor that links GPS-based “true”
+        # headings to compass-based “magnetic”  headings — and those are
+        # used in different situations.
+
+        # GPS & maps: Use true north.
+        # Magnetic compass: Points to magnetic north.
+
+        # If you’re navigating with both, you need to know how to
+        # convert between them so your bearings match.
+
+        # Example:
+
+        # GPS says: “Go 100° true.”
+        # Your compass reads magnetic, and your location has 10° East variation.
+        # You must steer 90° magnetic for your path to match 100° true.
         
         # print("GPRMC:", NMEAmain['GPRMC'])
         # magVar = NMEAmain['GPRMC'].split(',')[10]
@@ -346,14 +388,16 @@ def parseAndProcessGPSdata():
 
 def displayOLED():
 
-    # display the following GPS data on the ssd1306 OLED
+    # Display the following  GPS data on the ssd1306 OLED.  This OLED is
+    # 128x64 with  each character  being 8x8 pixels.  (0,0) is  top left
+    # hand corner of screen.
+
+    # display.text(text, column, row) where 0,0 is the top left
+    # hand corner of the display
     
     display.fill(0) # blank it out
     if GPSdata['fix'] == False:
         # we don't have a fixed
-        
-        # display.text(text, column, row) where 0,0 is the top left
-        # hand corner of the display
         display.text("Wait for fix...", 0, 0)
     else:
         # we have a fix 
@@ -376,6 +420,7 @@ def displayOLED():
         display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 40)
         display.text("Altitude:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
         #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
+        
     # visulise the display text on the OLED
     display.show()
 

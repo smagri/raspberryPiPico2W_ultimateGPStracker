@@ -143,3 +143,18 @@ write this driver into the pico's filesystem.
 Howto display on the ssd1306 OLED
 ---------------------------------
 https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html
+
+
+
+GPS - NMEA sentence information
+-------------------------------
+https://aprs.gids.nl/nmea/#rmc
+
+
+CD-PA1616S GPS patch antenna module, ie for adafruit ultimate GPS version 3
+---------------------------------------------------------------------------
+Data Sheet V.04
+---------------
+https://cdn-shop.adafruit.com/product-files/746/CD+PA1616S+Datasheet.v03.pdf
+
+
