@@ -131,10 +131,12 @@ keepRunning = True
 # this is a python dictionary, like an array combined with a map in c
 # and c++ index=GPGGA, data=="" at this stage
 #
-# The raw NMEAdata
+# The raw NMEAdata dictionary.
 #
-# This is the syntax of how you define a key,value pair in python. You
-# can initialise an empty dictionary with empty_dict = {}
+# This is  the syntax  of how you  define a key,value  pair, or  map, in
+# python, in  what is called a  dictionary. You can initialise  an empty
+# dictionary with empty_dict = {}
+
 NMEAdata = {
     'GPGGA' : "",
     'GPGSA' : "",
@@ -142,21 +144,21 @@ NMEAdata = {
     'GPVTG' : ""
 }
 
-# interpreted GPS UART data output lines/NMEAdata data lines into a
-# dictionary of key,value pairs.  key=string, value=integer or string
-# here
+# Interpreted GPS UART data output strings/NMEAdata data lines into a
+# dictionary of key,value pairs.  key=string, value=integer, float,
+# string or boolean here.  This is a python dictionary.
 GPSdata = {
-    'latitudeDecimalDegrees' : 0,
-    'longitudeDecimalDegrees' : 0,
-    'heading' : 0,
+    'latitudeDecimalDegrees' : 0.0,
+    'longitudeDecimalDegrees' : 0.0,
+    'heading' : 0.0,
     'fix' : False,
     'numSattelites4fix' : 0,
-    'knots' : 0,
+    'knots' : 0.0,
     'time' : '00:00:00',
     'date' : '00/00/0000',
-    'altitude' : 0,
-    'geoid' : 0,
-    'trueAltitude' : 0
+    'gpsElipsoidAltitude' : 0.0,
+    'geoidSeperation' : 0.0,
+    'trueAltitude' : 0.0
 }
 
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
@@ -168,8 +170,7 @@ def readGPSdata():
     print("Thread Running")
     global keepRunning, NMEAdata # NMEAdata is a dictionary, like a map in c++
 
-    # inlitiase string KEY in the dictionary to null string.
-    # dictionary definition, Key=NMEAdata read from GPS uart.
+    # Initialise the GPS NMEA strings
     GPGGA = ""
     GPGSA = ""
     GPRMC = ""
@@ -324,17 +325,35 @@ def parseAndProcessGPSdata():
         # Store local date in GPSdata dictionary
         GPSdata['date'] = date
 
-        altitude = float(NMEAmain['GPGGA'].split(',')[9])
-        geoid = float(NMEAmain['GPGGA'].split(',')[11])
-        # true altitude = altitude above elipsoid - difference above the
-        # elipsoid and actual altitude above sea level
-        trueAltitude = altitude - geoid
 
-        # altitude is hight above sea level
-        GPSdata['altitude'] = altitude
-        GPSdata['geoid'] = geoid
+        # Elevation == Altitude.  Or the height above sea level.
+
+        # To  determine altitue  GPS uses  a mathematical  model of  the
+        # earth known as  the elipsoid.  Where the north  and south pole
+        # are slightly flat and the earth bulges around the equator.
+
+        # However,  the  true altitude  factors  in  the earths  gravity
+        # field(mountains,  ocean  trenches,  density variation  in  the
+        # crust...etc) this  is known as  the distance above  sea level,
+        # the Geoid.  Which is the sea level if the oceans were extended
+        # under the land.
+
+        # Our  GPS   module  returns  the  elipsoid   altitude  and  the
+        # difference  between the  Geoid  and this  altitude, the  Geoid
+        # seperation.   The Geoid  seperation is  the height  difference
+        # between the ellipsoid and the Geoid at your location.
+
+        # Thus the true altitude = altitude above elipsoid - difference
+        # above the elipsoid and actual geoid altitude above sea level.
+        gpsElipsoidAltitude = float(NMEAmain['GPGGA'].split(',')[9])
+        geoidSeperation = float(NMEAmain['GPGGA'].split(',')[11])
+        trueAltitude = gpsElipsoidAltitude - geoidSeperation
+        GPSdata['gpsElipsoidAltitude'] = gpsElipsoidAltitude
+        GPSdata['geoidSeperation'] = geoidSeperation
         GPSdata['trueAltitude'] = trueAltitude
 
+
+        
         # ##############################################################
         # Trying  to  get  Magnetic  Variation  and  Magnetic  Variation
         # Direction.  However,  the datasheet for the  adafruit ultimate
@@ -592,6 +611,10 @@ try:
             # can verify this on google earth or openstreetmap.
             
             print("We have a satellite fix, Ultimate GPS Tracker Report: ")
+            print("Time:", GPSdata['time'])
+            print("Date:", GPSdata['date'])
+            print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
+            
             # we extract latitude and longitude in the format of
             # openstreetmap and google earth
             print("Latitude and Longitude: ",
@@ -600,9 +623,6 @@ try:
             
             print("Knots: ", GPSdata['knots'])
             print("Heading: ", GPSdata['heading'])
-            print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
-            print("Time:", GPSdata['time'])
-            print("Date:", GPSdata['date'])
             print("Altitude:", GPSdata['trueAltitude'])
             #print("Mag VarDir", GPSdata['Mag VarDir'])
             print()
