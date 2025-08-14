@@ -1,6 +1,7 @@
 19jul2025
 updates:
 26jul2025
+13aug2025
 
 This  project follows  Paul McWhorter  youtube videos  to build  a GPS
 tracker with the Rasberry Pi Pico W.  However, I have used the Pi Pico
@@ -157,4 +158,36 @@ Data Sheet V.04
 ---------------
 https://cdn-shop.adafruit.com/product-files/746/CD+PA1616S+Datasheet.v03.pdf
 
+
+
+Alternative method for calculating day and time(needs to be tested) in
+----------------------------------------------------------------------
+mycropython.
+-----------
+There is a function in the Pico that can do the heavy lifting for the
+clock/calendar time offset, try this:
+
+        utcDate = NMEAmain['GPRMC'].split(',')[9]
+        myYear = int(utcDate[4:]) + 2000
+        myMonth = int(utcDate[2:4])
+        myDay = int(utcDate[0:2])
+
+        utcTime = NMEAmain['GPGGA'].split(',')[1]
+        myHours = int(utcTime[0:2])
+        myMin = int(utcTime[2:4])
+        mySec = int(utcTime[4:6])
+
+        # Convert date/time to Epoch seconds, and add (/subtract) the offset in seconds
+        myTimeDate = 
+		time.mktime([myYear,myMonth,myDay,myHours,myMin,mySec,0,0]) + 3600 * utcCorrection
+        
+		# Convert Epoch time (now with the offset) back to date/time
+        myYear,myMonth,myDay,myHours,myMin,mySec,myWday,myYday = time.gmtime(myTimeDate)
+
+		# In some parts of the world, day and month are in reversed order.
+		GPSdata['date'] = f'{myDay:2d}/{myMonth:02d}/{myYear:04d}' 
+        GPSdata['time'] = f'{myHours:02d}:{myMin:02d}:{mySec:02d}'
+
+Standard/summer time could be a flag that you set or reset manually,
+during summertime you add an extra 3600 seconds to the Epoch time...
 

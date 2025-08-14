@@ -94,6 +94,14 @@ display = SSD1306_I2C(128, 64, i2cObj)
 # create GPS object
 GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
 
+##################################################################
+# for all PMTK commands see - PMTK command packet-Complete-A11.pdf
+##################################################################
+
+# Reset GPS
+GPS.write(b'$PMTK314,-1*04\r\n')
+
+
 # By default the  adafruit ultimate GPS reciver only  outputs a subset
 # of NMEA sentences. GPVTG is disabled by default to reduce bandwidth.
 # The  following line  ensures that  the  GPS reports  the GPVTG  NMEA
@@ -105,7 +113,7 @@ GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
 #
 #
 # Here is an explanation of each of the fields/sentences that can be
-# enabled/disabled with the PMTK314 command.
+# enabled/disabled with the PMTK314 command. See pg 13.
 
 #$PMTK314,<GLL>,<RMC>,<VTG>,<GGA>,<GSA>,<GSV>,<GRS>,<GST>,<MALM>,<MEPH>,<MDGP>,<MDBG>,<ZDA>,0,0,0,0,0,0*<Checksum>
 
@@ -118,7 +126,11 @@ GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
 # breakout  or  firmware  revision,  the  sentence  set  might  differ
 # slightly, requiring explicit configuration.
 
-GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+#GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*34\r\n")
+GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+
+# Datasheet: Turn on everything (not all of it is parsed!)
+# gps.send_command(b'PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0')
 
 # create the atomic lock in python, in c++ we put dataLock definition
 # in header file.
@@ -158,7 +170,8 @@ GPSdata = {
     'date' : '00/00/0000',
     'gpsElipsoidAltitude' : 0.0,
     'geoidSeperation' : 0.0,
-    'trueAltitude' : 0.0
+    'trueAltitude' : 0.0,
+    'altitude' : 0.0
 }
 
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
@@ -353,6 +366,10 @@ def parseAndProcessGPSdata():
         GPSdata['trueAltitude'] = trueAltitude
 
 
+        # GPS elipsoid altitude(elevation)
+        altitude = float(NMEAmain['GPGGA'].split(',')[9])
+        GPSdata['altitude'] = altitude
+
         
         # ##############################################################
         # Trying  to  get  Magnetic  Variation  and  Magnetic  Variation
@@ -400,7 +417,9 @@ def parseAndProcessGPSdata():
         # print("magDir", magDir)
         # GPSdata['Mag VarDir'] = magVar
         
-                
+
+        
+        
 # end: parseAndProcessGPSdata() function #######################################
 
 
@@ -419,26 +438,23 @@ def displayOLED():
         # we don't have a fixed
         display.text("Wait for fix...", 0, 0)
     else:
-        # we have a fix 
-        #display.text("ULTIMATE GPS: ", 0, 0)
-        #display.text(GPSdata['date'][0:5] + "/" + GPSdata['date'][8:]
-        #             + ' ' + GPSdata['time'], 0, 0)
-        
-        # display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
-        # #display.text(GPSdata['date'] + ' ' + GPSdata['time'], 0, 0)
-        # display.text("Lat:" + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
-        # display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 26)
-        # display.text("Speed:" + str(GPSdata['knots']) + 'knots', 0, 36)
-        # display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 46)
-        # display.text("Num Fix Sats:" + str(GPSdata['numSattelites4fix']), 0, 56)
-        display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
-        display.text("Num Fix Sats:" + str(GPSdata['numSattelites4fix']), 0, 8)
-        display.text("Lat:" + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
-        display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 24)
-        display.text("Speed:" + str(GPSdata['knots']) + 'km/h', 0, 32)
-        display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 40)
-        display.text("Altitude:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
-        #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
+        # we have a fix
+        if screenOne==True:
+            #display.text("ULTIMATE GPS: ", 0, 0)
+            display.fill(0) # so one screen doesn't override the other
+            display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
+            display.text("Num Fix Sats:" + str(GPSdata['numSattelites4fix']), 0, 8)
+            display.text("Lat:" + str(GPSdata['latitudeDecimalDegrees']), 0, 16)
+            display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 24)
+            display.text("Speed:" + str(GPSdata['knots']) + 'km/h', 0, 32)
+            display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 40)
+            #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
+            display.text("TrueAlt:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
+            display.text("GPSAlt:" + str(GPSdata['altitude']) + 'm', 0, 56)
+        elif screenOne==False:
+            display.fill(0)
+            display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
+            
         
     # visulise the display text on the OLED
     display.show()
@@ -587,6 +603,46 @@ def UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset):
 #                                   main.cpp                                  #
 ###############################################################################
 
+
+butOnePin = 12 # button one is connected to GPIO pin 12
+butOne = Pin(butOnePin, Pin.IN, Pin.PULL_UP) # object associated GPIO pin 12
+butOneUp = 0 # button goes down to up
+butOneDown = 0# button goes up to down
+butOneOld = 1 # last time through the loop the buttion was up
+ 
+screenOne = True # display screen one fist
+ 
+def butOneIRQ(pin):
+    global butOneUp,butOneDown
+    global butOneOld #previous state of button
+    global screenOne
+    butOneValue = butOne.value() # member function of butOne object
+    print("butOneValue", butOneValue)
+
+    # denouncing the switch
+    #
+    if butOneValue==0:
+        butOneDown = time.ticks_ms() # time when button pressed down
+    else:
+        butOneValue==1
+        butOneUp = time.ticks_ms() # time when button goes back up
+
+    # If in the last loop the button was in the up state and is now
+    # pressed down in this loop, with a 50ms hysteresis(for switch
+    # debounce noise, eg may get multiple 0's before you get a 1 and
+    # visa versa).  Also, obviously button is pressed down after it was
+    # in the up state last so butOneDown-butOneUp is a +ve value.
+    if (butOneOld==1) and (butOneValue==0) and ((butOneDown-butOneUp) > 50):
+        screenOne = not screenOne
+        print('Button One Triggered')
+    butOneOld=butOneValue
+
+# button going from 1 to 0, call interrupt routine called butOneIRQ
+# OR
+# button going from 0 to 1, cal interrupt routine called butOneIRQ
+butOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = butOneIRQ)
+
+
 # launch the reading data thread readGPSdata()
 _thread.start_new_thread(readGPSdata,())
 time.sleep(2) # so we don't start reading data till there is some in
@@ -623,7 +679,8 @@ try:
             
             print("Knots: ", GPSdata['knots'])
             print("Heading: ", GPSdata['heading'])
-            print("Altitude:", GPSdata['trueAltitude'])
+            print("Geoid True Altitude:", GPSdata['trueAltitude'])
+            print("GPS Ellipsoid Altitude:", GPSdata['altitude'])
             #print("Mag VarDir", GPSdata['Mag VarDir'])
             print()
 
@@ -634,7 +691,7 @@ try:
         
         # NOTE: this does not overflow the buffer as readGPSdata()
         # executes in another thread.
-        time.sleep(10)
+        # time.sleep(10)
 
 
 # This MicroPython code block is part of an except clause that handles
