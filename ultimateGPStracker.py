@@ -72,6 +72,7 @@ import time
 import _thread
 from ssd1306 import SSD1306_I2C
 
+
  # UTC offset for Sydney in Australia, outside daylight saving time.
  # For daylight saving time the utcOffset=11;
 utcOffset = 10
@@ -126,8 +127,12 @@ GPS.write(b'$PMTK314,-1*04\r\n')
 # breakout  or  firmware  revision,  the  sentence  set  might  differ
 # slightly, requiring explicit configuration.
 
-#GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*34\r\n")
-GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+# sjm -nowrks
+#GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*34\r\n")
+
+# wrks Pauls currently:
+GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+
 
 # Datasheet: Turn on everything (not all of it is parsed!)
 # gps.send_command(b'PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0')
@@ -174,15 +179,44 @@ GPSdata = {
     'altitude' : 0.0
 }
 
+
+def yield_thread():
+    # yeild thread in micropython.  This call doesn't pause, it just
+    # hands control back to the scheduler so the other threads or global
+    # setting code can run.
+    time.sleep_ms(0)
+
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to
 # loose data while processing it.
 
 # start: readGPSdata() thread ##################################################
 def readGPSdata():
-    print("Thread Running")
-    global keepRunning, NMEAdata # NMEAdata is a dictionary, like a map in c++
+    # hacky time.sleep(10) as this also yeilds the thread
 
+    # We  need  to  do  this  as  there is  a  bug  in  the  micropython
+    # implementation on the raspberry pi pico  w or pico 2 w hardware we
+    # are using.  See  readme file for link to issue  on the micropython
+    # github page.
+
+    # Essentially,  this  readGPSdata()  thread may  be  getting  called
+    # before the main thread or  some global initialisation.  Hence, the
+    # globals required  for this thread,  like keepRunning and  GPS, may
+    # not be defined  when it runs.  Hence, the program  will never read
+    # data as say  keepRunning is not set yet.  This  will also cause an
+    # exception intermittently.  yeald_thread()  forces the other thread
+    # or global initialisation  to run first.  Note  that a time.sleep()
+    # here will yield this thread also.
+    yield_thread()
+
+    print("Thread Running readGPSdata")
+    
+
+    # global means use the variable values defined outside this function
+    # at the global(module) level
+    global keepRunning, NMEAdata, GPS # NMEAdata is a dictionary, like a map in c++
+
+    
     # Initialise the GPS NMEA strings
     GPGGA = ""
     GPGSA = ""
@@ -198,6 +232,7 @@ def readGPSdata():
         print(junk)
         
     myNMEA = "" # initialise the NMEA string read from uart
+
     while keepRunning:
         # we only read NMEA data when it's present in the buffer
         if GPS.any():
@@ -439,6 +474,7 @@ def displayOLED():
         display.text("Wait for fix...", 0, 0)
     else:
         # we have a fix
+
         if screenOne==True:
             #display.text("ULTIMATE GPS: ", 0, 0)
             display.fill(0) # so one screen doesn't override the other
@@ -451,7 +487,8 @@ def displayOLED():
             #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
             display.text("TrueAlt:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
             display.text("GPSAlt:" + str(GPSdata['altitude']) + 'm', 0, 56)
-        elif screenOne==False:
+        else:
+            # goto next page
             display.fill(0)
             display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
             
@@ -617,7 +654,7 @@ def butOneIRQ(pin):
     global butOneOld #previous state of button
     global screenOne
     butOneValue = butOne.value() # member function of butOne object
-    print("butOneValue", butOneValue)
+    #print("butOneValue", butOneValue)
 
     # denouncing the switch
     #
@@ -633,14 +670,23 @@ def butOneIRQ(pin):
     # visa versa).  Also, obviously button is pressed down after it was
     # in the up state last so butOneDown-butOneUp is a +ve value.
     if (butOneOld==1) and (butOneValue==0) and ((butOneDown-butOneUp) > 50):
+        # This is atomic for simple assignments like booleans in
+        # mycropython.  Counters, lists, dicts, multi-step operations:
+        # use disable_irq() or carefully designed atomic methods.
         screenOne = not screenOne
         print('Button One Triggered')
     butOneOld=butOneValue
+
+############################################################################
+# irq's are seperate threads in mycropython, they are preemptive
+#
+############################################################################
 
 # button going from 1 to 0, call interrupt routine called butOneIRQ
 # OR
 # button going from 0 to 1, cal interrupt routine called butOneIRQ
 butOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = butOneIRQ)
+
 
 
 # launch the reading data thread readGPSdata()

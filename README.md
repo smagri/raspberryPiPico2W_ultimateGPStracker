@@ -113,9 +113,9 @@ Foundation recommends Thonny  for Pico users in  its documentation and
 tutorials  because  it aligns  with  their  goal of  making  computing
 education accessible.
 
-
+  * [ ] 
 Alternatives Exist (for more anced users)
-While Thonny is ideal for beginners, advanced users sometimes prefer:
+While Thonny is ideal for beginners, advanced users sometimes prefe:
 
 VS Code (with the Pico-Go extension)
 
@@ -132,6 +132,8 @@ Get the current version of the ssd1306 driver from the github repository:
 
 From repository: https://github.com/micropython
 https://github.com/micropython/micropython-lib/blob/master/micropython/drivers/display/ssd1306/ssd1306.py
+In the directory:
+https://github.com/micropython/micropython-lib/tree/master/micropython/drivers/display/ssd1306
 
 Copy it into the directory where your main.py file is, in our case
 ultimateGPStracker.py is our main.py.
@@ -191,3 +193,13 @@ clock/calendar time offset, try this:
 Standard/summer time could be a flag that you set or reset manually,
 during summertime you add an extra 3600 seconds to the Epoch time...
 
+
+
+Thread yield, yield_thread() in readGPSdata() thread.
+-----------------------------------------------------
+
+We need to do this as there is a bug in the micropython implementation
+on the  raspberry pi pico w  or pico 2  w hardware we are  using.  See
+link to issue on the micropython github page.
+https://github.com/micropython/micropython/issues/10621
+https://github.com/micropython/micropython/issues/12698
