@@ -127,11 +127,14 @@ GPS.write(b'$PMTK314,-1*04\r\n')
 # breakout  or  firmware  revision,  the  sentence  set  might  differ
 # slightly, requiring explicit configuration.
 
-# sjm -nowrks
-#GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*34\r\n")
+# sjm, wrks, produces minimum number of NMEA sentences, only the onces
+# we use.
+GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
 
-# wrks Pauls currently:
-GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+# wrks Pauls currently, produces more that the minimum number of NMEA
+# sentences we use:
+#
+#GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
 
 
 # Datasheet: Turn on everything (not all of it is parsed!)
@@ -528,7 +531,7 @@ def is_leap_year(year):
 def UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset):
 
         # utcTime="054946.000", utcDate="090825"
-        print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
+        # print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
 
         # Convert the UTC time from the NMEA sentence into local time.
         # This  code  caters  for  positive and  negative  UTC  offest
