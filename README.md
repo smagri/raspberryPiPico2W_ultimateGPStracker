@@ -5,7 +5,9 @@ updates:
 
 This  project follows  Paul McWhorter  youtube videos  to build  a GPS
 tracker with the Rasberry Pi Pico W.  However, I have used the Pi Pico
-2 W and everything works well.
+2 W and everything works well.   Note also that all .pdf documents are
+in  ~/proj/paulMcWhorter/docs/ultimateGPStracker also,  but links  are
+given below.
 
 Bill of materials:
 -----------------
@@ -199,7 +201,13 @@ Thread yield, yield_thread() in readGPSdata() thread.
 -----------------------------------------------------
 
 We need to do this as there is a bug in the micropython implementation
-on the  raspberry pi pico w  or pico 2  w hardware we are  using.  See
-link to issue on the micropython github page.
+on the  raspberry pi pico w  or pico 2  w hardware we are  using, when
+doing threading.  See link to issue on the micropython github page.
 https://github.com/micropython/micropython/issues/10621
 https://github.com/micropython/micropython/issues/12698
+
+
+
+PMTK command packets:
+---------------------
+https://cdn-shop.adafruit.com/datasheets/PMTK_A11.pdf

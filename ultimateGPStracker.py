@@ -87,19 +87,28 @@ utcOffset = 10
 # with a resistor accross two pins to indicate the address
 
 # NOTE: use i2cObj instead of i2c as i2c may be a reserved word
+# create i2cObj object of I2C micropython class
 i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
 
-# create display object: 128x64=columnsXlines
+# create display object: 128x64=columnsXlines of the SSD1306_I2C class
 display = SSD1306_I2C(128, 64, i2cObj)
 
-# create GPS object
+# create  GPS object  of the  micropython machine.UART  class with  this
+# constructor.  UART class member functions  do raw serial i/o.  You can
+# get chatGPT to display all the UART class member functions.
 GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
 
-##################################################################
+########################################################################
 # for all PMTK commands see - PMTK command packet-Complete-A11.pdf
-##################################################################
 
-# Reset GPS
+# When the  power of  device (module) is  removed, any  modified setting
+# will  be lost  and reset  to factory  default setting.  If the  device
+# (module) has backup  power supply through VBACKUP or  coin battery, it
+# will be  able to keep the  modified setting until the  backup power is
+# exhausted.                 Packet               Type:                0
+# ######################################################################
+
+# You can also restore the system default NMEA settings via:
 GPS.write(b'$PMTK314,-1*04\r\n')
 
 
@@ -109,6 +118,9 @@ GPS.write(b'$PMTK314,-1*04\r\n')
 # sentence.   You only  need to  do  this once  so you  don't have  to
 # include it in  further code.  That is, it permanantly  sets your GPS
 # reciver to output GPVTG NMEA strings.
+
+# Checksum calculation is the XOR of all the values between $ and *.
+# $...*<checksum>\r\n
 
 # $PMTK314,<sentence mask>*<checksum><CR><LF>
 #
