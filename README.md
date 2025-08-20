@@ -1,7 +1,4 @@
-19jul2025
-updates:
-26jul2025
-13aug2025
+Project started 19jul2025.
 
 This  project follows  Paul McWhorter  youtube videos  to build  a GPS
 tracker with the Rasberry Pi Pico W.  However, I have used the Pi Pico
@@ -211,3 +208,16 @@ https://github.com/micropython/micropython/issues/12698
 PMTK command packets:
 ---------------------
 https://cdn-shop.adafruit.com/datasheets/PMTK_A11.pdf
+
+
+
+Power Up using Bread Volt
+-------------------------
+* 3.3V rail to OLED VCC
+* 5.0 rail to pin39 - VSYS
+* copy ultimateGPStracker.py to main.py, as on power-up pico runs
+  main.py automaticly
+* if thonny doesn't find main.py due to symlink of lu1 just load it
+  from the command line:
+
+  thonny ultimateGPStracker.py main.py
