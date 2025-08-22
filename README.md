@@ -221,3 +221,54 @@ Power Up using Bread Volt
   from the command line:
 
   thonny ultimateGPStracker.py main.py
+
+
+
+Thonny hanging on File->Save As main.py and bug with hard reboot of
+-------------------------------------------------------------------
+system and using the Sunfounder Bread Volt.
+-------------------------------------------------------------------
+
+Firstly, my  rasberry pi  pico 2 w  is plugged into  the USB  port, no
+Bread Volt attached.  Note it is a pico 2 w not a pico w.
+
+Then I  started thonny, which does  a soft reboot of  the raspberry pi
+pico 2  w on  startup, and  so my code  worked.  However,  with thonny
+closed and  on a hard reboot(unplug  and replug in usb  cable) my code
+did not work.
+
+So I  tried to  flash main.py  via thonny File->Save  As and  it hung.
+Consequently, I had  to execute the following commands  on the command
+line to flash main.py into the raspberry pi pico 2 w:
+
+Firstly, you will need these:
+* pip install mpremote
+* wget https://datasheets.raspberrypi.com/soft/flash_nuke.uf2
+
+* with boot sel pressed plug in usb cable
+* cp flash_nuke.uf2 /media/.../RP2350/ ,to clear mycropython from pico
+* cp mp_firmware_unofficial_latest.uf2 /media/.../RP2350/ ,to copy
+  back mycropython
+* mpremote connect /dev/ttyACM0 fs ls ,should be empty
+* mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306 : ,to copy back
+  your main file
+* then your main.py is flashed to your pico
+* mpremote connect /dev/ttyACM0 fs ls  ,should show main.py and
+  ssd1306.py to be there.
+
+However, this still didn't solve my problem with a hard reboot running
+my code.  So then  I had to modify my code to fix  my bug.  Remember a
+soft reboot,  running code from  thonny, the GPS receiver  had already
+been  running  and my  code  worked.   So  I  guessed that  putting  a
+time.sleep(10) in my main.py, after importing the libraries and before
+any other  code, on a hard  reboot would give the  GPS receiver enough
+time to settle before running any code.  Thus on a hard reboot my code
+now worked.  Also, I was able to  unplug the pico from usb and use the
+Bread Volt and everything worked fine.
+
+Obviously, this is a hack but perhaps it would be fixed by polling the
+GPS receiver via some register to see if it is actually up and running
+before executing any  code.  Also, perhaps others are  not seeing this
+problem as I am using a pico 2 w  not a pico w so the pico 2 is faster
+so  perhaps is  not leaving  the GPS  receiver enough  time to  settle
+properly before executing code.

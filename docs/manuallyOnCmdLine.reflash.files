@@ -1,0 +1,33 @@
+# with boot sel pressed re power
+smagri@texas:~/proj/paulMcWhorter/ultimateGPStracker$ cp flash_nuke.uf2 /media/smagri/RP2350/
+smagri@texas:~/proj/paulMcWhorter/ultimateGPStracker$ ls /media/smagri/RP2350/
+INDEX.HTM  INFO_UF2.TXT
+smagri@texas:~/proj/paulMcWhorter/ultimateGPStracker$ cp mp_firmware_unofficial_latest.uf2 /media/smagri/RP2350/
+smagri@texas:~/proj/paulMcWhorter/ultimateGPStracker$ mpremote connect /dev/ttyACM0 fs ls
+ls :
+smagri@texas:~/proj/paulMcWhorter/ultimateGPStracker$ mpremote connect /dev/ttyACM0 fs cp main.py :main.py
+cp main.py :main.py
+smagri@texas:~/proj/paulMcWhorter/ultimateGPStracker$ mpremote connect /dev/ttyACM0 fs cp ssd1306.py :ssd1306.py
+cp ssd1306.py :ssd1306.py
+smagri@texas:~/proj/paulMcWhorter/ultimateGPStracker$ 
+# ready for rerun 
+# to test hard boot issues, replug usb
+# with sleep allows time to see
+smagri@texas:~/proj/paulMcWhorter/ultimateGPStracker$ mpremote connect /dev/ttyACM0
+
+Summary:
+-------
+
+Firstly, you will need these:
+pip install mpremote
+wget https://datasheets.raspberrypi.com/soft/flash_nuke.uf2
+
+with boot sel pressed plug in usb cable
+cp flash_nuke.uf2 /media/smagri/RP2350/
+cp mp_firmware_unofficial_latest.uf2 /media/smagriRP2350/
+mpremote connect /dev/ttyACM0 fs ls 
+mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306 : 
+
+* then your main.py is flashed to your pico
+* mpremote connect /dev/ttyACM0 fs ls  ,should show main.py and
+  ssd1306.py to be there.

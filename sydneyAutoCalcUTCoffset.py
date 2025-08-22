@@ -72,11 +72,17 @@ import time
 import _thread
 from ssd1306 import SSD1306_I2C
 
-time.sleep(10)
 
- # UTC offset for Sydney in Australia, outside daylight saving time.
- # For daylight saving time the utcOffset=11;
-utcOffset = 10
+ # UTC offset for Sydney in Australia, outside daylight saving time
+ # utcOffset=10. For daylight saving time the utcOffset=11.
+
+# When Does DST Start and End in Sydney Australia?
+
+# Starts: First Sunday in October—at 2:00 am AEST, clocks spring forward
+# to 3:00 am AEDT.
+
+# Ends: First Sunday in April—at 3:00  am AEDT, clocks fall back to 2:00
+# am AEST, giving you an extra hour.  utcOffset = 11
 
 # create i2c2 object:
 
@@ -90,6 +96,7 @@ utcOffset = 10
 # NOTE: use i2cObj instead of i2c as i2c may be a reserved word
 # create i2cObj object of I2C micropython class
 i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
+print("Scan:", i2cObj.scan())
 
 # create display object: 128x64=columnsXlines of the SSD1306_I2C class
 display = SSD1306_I2C(128, 64, i2cObj)
@@ -201,7 +208,6 @@ def yield_thread():
     # hands control back to the scheduler so the other threads or global
     # setting code can run.
     time.sleep_ms(0)
-    # hakky way to do this is: time.sleep(10)
 
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to
@@ -383,7 +389,7 @@ def parseAndProcessGPSdata():
         utcTime = NMEAmain['GPGGA'].split(',')[1]
         utcDate = NMEAmain['GPRMC'].split(',')[9]
 
-        time, date = UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset)
+        time, date = UTCtoLocalDateAndTime(utcTime, utcDate)
         
         # Store local time in GPSdata dictionary
         GPSdata['time'] = time
@@ -565,6 +571,10 @@ def UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset):
         day = int(utcDate[0:2])
 
         # Determine correct UTC offset for Sydney Australia.
+        if isSydneyinDaylightSavingMode(year, month, day):
+            utcOffset = 11  # AEDT
+        else:
+            utcOffset = 10  # AEST
 
         # UTC offset for Sydney based on the current date using the
         # known DST rules.

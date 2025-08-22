@@ -72,7 +72,6 @@ import time
 import _thread
 from ssd1306 import SSD1306_I2C
 
-time.sleep(10)
 
  # UTC offset for Sydney in Australia, outside daylight saving time.
  # For daylight saving time the utcOffset=11;
@@ -90,6 +89,7 @@ utcOffset = 10
 # NOTE: use i2cObj instead of i2c as i2c may be a reserved word
 # create i2cObj object of I2C micropython class
 i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
+#print("Scan:", i2cObj.scan())
 
 # create display object: 128x64=columnsXlines of the SSD1306_I2C class
 display = SSD1306_I2C(128, 64, i2cObj)
@@ -201,7 +201,6 @@ def yield_thread():
     # hands control back to the scheduler so the other threads or global
     # setting code can run.
     time.sleep_ms(0)
-    # hakky way to do this is: time.sleep(10)
 
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to
@@ -209,6 +208,9 @@ def yield_thread():
 
 # start: readGPSdata() thread ##################################################
 def readGPSdata():
+    display.text("readingGPS", 0, 0, 1)
+    display.show()
+    #time.sleep(10)
     # hacky time.sleep(10) as this also yeilds the thread
 
     # We  need  to  do  this  as  there is  a  bug  in  the  micropython
@@ -249,7 +251,8 @@ def readGPSdata():
         print(junk)
         
     myNMEA = "" # initialise the NMEA string read from uart
-
+    #dbg
+    keepRunning = True
     while keepRunning:
         # we only read NMEA data when it's present in the buffer
         if GPS.any():
@@ -259,14 +262,14 @@ def readGPSdata():
             # subset of UTF-8)
             myChar=GPS.read(1).decode('utf-8')
             # supress line feed, so you can contiue to read accross
-            #print(myChar, end="")
+            print(myChar, end="")
             myNMEA+=myChar
             if myChar == '\n':
                 # When EOL is reached strip the EOL char from myNMEA string.
                 myNMEA = myNMEA.strip()
                 # to see what NMEA data I am getting as initially we
                 # weren't getting GPVTG data
-                #print(myNMEA)
+                print(myNMEA)
                 # store the NMEAdata strings into variables
 
                 # gets characters 1 to 5 in the current NMEA string
@@ -280,6 +283,10 @@ def readGPSdata():
                 if myNMEA[1:6] == "GPVTG":
                     GPVTG = myNMEA
 
+                # gdb
+                display.text("Read NMEAdata", 0, 8)
+                display.show()
+                    
                 # if _all_  the NMEA ata is  present populate the
                 # dictionary  NMEAdata. ie  setup the  map between
                 # key=type of NMEA string = string of data
@@ -288,6 +295,11 @@ def readGPSdata():
                     # we must do this within a lock as other
                     # threads may want to access the NMEAdata
                     # dictionary elements at the same time
+
+                    # gdb
+                    display.text("Have GP data", 0, 16)
+                    display.show()
+                    
                     dataLock.acquire()
                     NMEAdata = {
                         'GPGGA' : GPGGA,
@@ -317,11 +329,19 @@ def parseAndProcessGPSdata():
     
     # Do we have a fix on the GPS module, 6th element in the NMEA
     # GPGGA string
-    if len(NMEAmain['GPGGA'].split(',')) < 6:
-        return
+
+    # gdb
+    #if len(NMEAmain['GPGGA'].split(',')) < 6:
+    #    return
+
     readFix=int(NMEAmain['GPGGA'].split(',')[6])
+#    time.sleep(10)
+
+    # gdb
+    readFix=True        
     if readFix !=0:
         GPSdata['fix'] = True
+        
 
         # Processing GPGGA NMEA string
         #
@@ -489,6 +509,8 @@ def displayOLED():
     if GPSdata['fix'] == False:
         # we don't have a fixed
         display.text("Wait for fix...", 0, 0)
+        # dbg
+        GPSdata['fix'] = True
     else:
         # we have a fix
 
