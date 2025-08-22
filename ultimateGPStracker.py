@@ -72,6 +72,7 @@ import time
 import _thread
 from ssd1306 import SSD1306_I2C
 
+time.sleep(10)
 
  # UTC offset for Sydney in Australia, outside daylight saving time.
  # For daylight saving time the utcOffset=11;
@@ -200,6 +201,7 @@ def yield_thread():
     # hands control back to the scheduler so the other threads or global
     # setting code can run.
     time.sleep_ms(0)
+    # hakky way to do this is: time.sleep(10)
 
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to

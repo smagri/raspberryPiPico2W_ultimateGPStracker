@@ -272,3 +272,34 @@ before executing any  code.  Also, perhaps others are  not seeing this
 problem as I am using a pico 2 w  not a pico w so the pico 2 is faster
 so  perhaps is  not leaving  the GPS  receiver enough  time to  settle
 properly before executing code.
+
+
+
+Firmware(see firmware directory):
+---------------------------------
+flash_nuke.uf2
+
+This is  a special erase utility  provided by Raspberry Pi.   When you
+copy this  to your Pico  in BOOTSEL mode,  it erases the  entire flash
+memory of the microcontroller.  Afterward,  the board will appear as a
+blank device, and you can  install a fresh MicroPython, CircuitPython,
+or C/C++  firmware.  It doesn’t  leave anything  useful to run  – it’s
+purely for “factory reset” of the flash.
+
+
+mp_firmware_unofficial_latest.uf2
+
+This is  a firmware image  containing MicroPython (MP  = MicroPython).
+"Unofficial"  means  it’s  not  from  the  Raspberry  Pi  foundation’s
+official builds but  probably from a community  contributor or nightly
+build.  Copying this  .uf2 onto the Pico in BOOTSEL  mode will install
+MicroPython on the device.
+
+After flashing, the Pico will reboot and expose a REPL (interactive
+Python shell) over USB.
+
+In short:
+
+* .uf2 = a firmware update file format.
+* flash_nuke.uf2 = erases the chip.
+* mp_firmware_unofficial_latest.uf2 = installs MicroPython firmware.
