@@ -74,9 +74,6 @@ from ssd1306 import SSD1306_I2C
 
 time.sleep(10)
 
- # UTC offset for Sydney in Australia, outside daylight saving time.
- # For daylight saving time the utcOffset=11;
-utcOffset = 10
 
 # create i2c2 object:
 
@@ -90,6 +87,7 @@ utcOffset = 10
 # NOTE: use i2cObj instead of i2c as i2c may be a reserved word
 # create i2cObj object of I2C micropython class
 i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
+print("Scan:", i2cObj.scan())
 
 # create display object: 128x64=columnsXlines of the SSD1306_I2C class
 display = SSD1306_I2C(128, 64, i2cObj)
@@ -194,6 +192,96 @@ GPSdata = {
     'trueAltitude' : 0.0,
     'altitude' : 0.0
 }
+
+
+def firstSunday(year, month):
+    #"""Return the day (date) of the first Sunday for given month/year."""
+    # Zeller’s congruence-like calculation
+    # 0 = Saturday, 1 = Sunday, ...
+    # Python's weekday(): Monday=0, Sunday=6
+    from math import floor
+    # Start at day 1
+    import utime  # MicroPython time module
+
+    # 1. Build a "time tuple" for the first day of the month at 00:00:00.
+    # utime.mktime() expects a tuple: (year, month, day, hour, min, sec, weekday, yearday)
+    # The last two values (weekday, yearday) can be 0 because mktime() recalculates them.
+    t = utime.mktime((year, month, 1, 0, 0, 0, 0, 0))
+
+    # 2. Convert the timestamp back to a "localtime" tuple to find the weekday.
+    # utime.localtime(t) → (year, month, day, hour, min, sec, weekday, yearday)
+    # weekday: Monday=0, Tuesday=1, ..., Sunday=6
+    weekday = utime.localtime(t)[6]  # 0=Monday ... 6=Sunday
+
+    # 3. Work out how far the first Sunday is from day 1.
+    # If weekday == 6 → day 1 is already Sunday → return 1.
+    # Otherwise, shift forward until the next Sunday.
+    #
+    # Formula: 1 + ((6 - weekday) % 7)
+    #   - (6 - weekday) → how many days to "jump" to reach Sunday
+    #   - % 7 makes sure it wraps around correctly (e.g. if already Sunday, jump = 0)
+    #   - +1 because we start counting from day 1
+    return 1 + ((6 - weekday) % 7)  # find first Sunday
+
+
+
+def sydneyAutoCalcUTCoffset(year, month, day, hour):
+    # Determine the current correct UTC offset for Sydney Australia.
+
+    #utcOffset = 11  # AEDT
+    #utcOffset = 10  # AEST
+    
+    # When Does DST Start and End in Sydney Australia?
+
+    # Sydney Daylight Saving Rules (as of 2025):
+    
+    # Starts: First Sunday in October(10th month of year)—at 2:00 am
+    # AEST, clocks spring forward to 3:00 am AEDT. utCoffset = 11
+
+    # Ends: First Sunday in April(4th month of year)—at 3:00 am AEDT,
+    # clocks fall back to 2:00 am AEST, giving you an extra hour.
+    # utcOffset = 10
+
+    # UTC offset for Sydney based on the current date using the
+    # known DST rules.
+
+    # DST starts: first Sunday in October(10th month of year)
+    start_day = firstSunday(year, 10)
+    # DST ends: first Sunday in April(4th month of year)
+    end_day = firstSunday(year, 4)
+
+    # --- October case: DST starts on first Sunday at 2:00am ---
+    if month == 10:
+        if day > start_day:
+            utcOffset = 11                # after start date → DST
+        elif day == start_day:
+            if (hour >= 2):               # same day: only from 2:00am onward
+                utcOffset = 11
+            else:
+                utcOffset = 10
+        else:
+            utcOffset = 10                # before start day → not DST
+
+    # --- April case: DST ends on first Sunday at 3:00am ---
+    if month == 4:
+        if day < end_day:
+            utcOffset = 11                 # before end day → DST
+        elif day == end_day:
+            if (hour < 3):                 # same day: only until 2:59am
+                utcOffset = 11
+            else:
+                utcOffset = 10
+        else:
+            utcOffset = 10                # after end day → not DST
+
+    # --- Other months ---
+    if month > 10 or month < 4:
+        utcOffset = 11                    # between Oct–Mar → DST
+    else:
+        utcOffset = 10                    # between Apr–Sep → not DST
+
+    
+    return utcOffset
 
 
 def yield_thread():
@@ -383,12 +471,15 @@ def parseAndProcessGPSdata():
         utcTime = NMEAmain['GPGGA'].split(',')[1]
         utcDate = NMEAmain['GPRMC'].split(',')[9]
 
-        time, date = UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset)
+        time, date = UTCtoLocalDateAndTime(utcTime, utcDate)
         
         # Store local time in GPSdata dictionary
         GPSdata['time'] = time
         # Store local date in GPSdata dictionary
         GPSdata['date'] = date
+        # Store current utcOffset in GPSdata dictionary
+        #GPSdata['utcOffset'] = utcOffset
+        
 
 
         # Elevation == Altitude.  Or the height above sea level.
@@ -542,10 +633,10 @@ def is_leap_year(year):
 
 # in micropython/python all fn parameters are inputs, return outputs
 # with return statement
-def UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset):
+def UTCtoLocalDateAndTime(utcTime, utcDate):
 
         # utcTime="054946.000", utcDate="090825"
-        # print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
+        #print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
 
         # Convert the UTC time from the NMEA sentence into local time.
         # This  code  caters  for  positive and  negative  UTC  offest
@@ -564,21 +655,14 @@ def UTCtoLocalDateAndTime(utcTime, utcDate, utcOffset):
         # Extract day from UTC date (e.g., '01' for 1st)
         day = int(utcDate[0:2])
 
-        # Determine correct UTC offset for Sydney Australia.
-
-        # UTC offset for Sydney based on the current date using the
-        # known DST rules.
-
-        # Sydney Daylight Saving Rules (as of 2025):
-        # Starts: First Sunday in October
-        # Ends: First Sunday in April
-        # DST offset: UTC+11
-        # Standard time: UTC+10
-
-        # utcOffset as an integer = curUTCcOffsetSydneyAustralia()
-
+        # Extract hour from UTC date without the utcOffset
+        utcOffset = 14 # testing if utcOffset is calculated correctly
+        hour = int(utcTime[0:2])
+        utcOffset = sydneyAutoCalcUTCoffset(year, month, day, hour)
+        print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
         # Calculate hours by adding UTC offset to UTC hours, convert to string
         hour = int(utcTime[0:2]) + utcOffset
+
         # Extract minutes from UTC time (e.g., '34' from '013445.000')
         minute = int(utcTime[2:4])
         # Extract seconds from UTC time (e.g., '45' from '013445.000')

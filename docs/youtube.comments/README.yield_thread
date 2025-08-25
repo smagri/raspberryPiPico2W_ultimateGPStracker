@@ -1,0 +1,86 @@
+Thread yield, yield_thread() in readGPSdata() thread.
+-----------------------------------------------------
+
+We need to do this as there is a bug in the micropython implementation
+on the  raspberry pi pico w  or pico 2  w hardware we are  using.  See
+link to issue on the micropython github page.
+https://github.com/micropython/micropython/issues/10621
+https://github.com/micropython/micropython/issues/12698
+
+
+We need to do this as there is a bug in the micropython implementation
+on the  raspberry pi pico w  or pico 2  w hardware we are  using.  See
+readme file for link to issue on the micropython github page.
+
+Essentially, this  readGPSdata() thread  may be getting  called before
+the main  thread or  some global  initialisation.  Hence,  the globals
+required for this thread, like keepRunning and GPS, may not be defined
+when  it  runs.  Hence,  the  program  will  never  read data  as  say
+keepRunning  is  not set  yet.   This  will  also cause  an  exception
+intermittently.   yeald_thread() forces  the  other  thread or  global
+initialisation to run first.  Note that a time.sleep() here will yield
+this thread also.
+
+
+Youtube post, rejected:
+
+I had a problem with the code throwing an exception and reporting that
+keeepRunning or GPS were not  defined in readGPsdata() (ie gpsThread()
+in Paul's code)  I had to implement putting  a yield_thread() function
+at the top of my readGPSdata()(ie gpsThread())
+
+def yield_thread():
+    # yeild thread in micropython.  This call doesn't pause, it just
+    # hands control back to the scheduler so the other threads or global
+    # setting code can run.
+    time.sleep_ms(0)
+
+
+def readGPSdata()
+
+    yield_thread()
+
+... rest of code.
+
+This is a known issue, there is a bug in the micropython implementation
+on the  raspberry pi pico w  or pico 2  w hardware we are  using.  See
+link to issue on the micropython github page.
+https://github.com/micropython/micropython/issues/10621
+https://github.com/micropython/micropython/issues/12698
+
+
+------------------------------------------------------------------------------------
+ChatGPT rewording:
+
+I ran  into an  exception where  keepRunning or  GPS were  not defined
+inside readGPSdata() (ie  gpsThread() in Paul's code).  I  fixed it by
+adding  a  small   yield_thread()  function  at  the   very  start  of
+readGPSdata() so the scheduler can run other setup code first:
+
+def yield_thread():
+    # Yield to the scheduler so other threads or global setup can run
+    time.sleep_ms(0)
+
+def readGPSdata():
+    yield_thread()
+    # ... rest of code
+
+
+This seems to be a known behavior with MicroPython on Raspberry Pi Pico W / Pico 2 W hardware.
+See: github.com/micropython/micropython/issues/10621 and
+github.com/micropython/micropython/issues/12698
+
+
+------------------------------------------------------------------------------------
+This worked:
+
+I ran  into an  exception where  keepRunning or  GPS were  not defined
+inside readGPSdata() (ie  gpsThread() in Paul's code).  I  fixed it by
+adding  a  small   yield_thread() function  at  the   very  start  like:
+readGPSdata()
+     time.sleep_ms(0)
+# so the scheduler can run other threads or setup code first
+
+This seems to be a known behavior with MicroPython on Raspberry Pi
+Pico W / Pico 2 W hardware.  See issues 10621 and 12698.
+

@@ -1,0 +1,26 @@
+@simonemagri8256
+21 hours ago (edited)
+Thonny hanging on File->Save As main python file.  Cheet Sheet on how to use mpremote command line tools to flash main to the pico.   Goto README  on my github directory, username smagri, in the comments after 'Thonny hanging...' heading, repository name is raspberryPiPico2W_ultimateGPStracker
+
+
+
+Reply
+
+
+Paul McWhorter
+·
+
+1 reply
+
+@paulmcwhorter
+1 hour ago
+Yes, there have been reported issues with saving programs to main.py on the Raspberry Pi Pico, particularly when using MicroPython and the Thonny IDE. These problems often stem from the Pico's behavior when a main.py file is present, as it automatically runs on boot, which can interfere with saving new files or accessing the device. You can try by clicking the stop button to stop the program, and then try to save main.py
+
+
+
+Reply
+Simone Magri
+ @paulmcwhorter  Yes this is when it happens when there is a main.py already on the pico.  Stop in thonny did not work.
+
+
+ Yes I intend to use the breadboard sized PCB's from ElectroCookie but yes I have done dedicated PCBs for projects using kicad.

@@ -1,0 +1,19 @@
+
+Doesn't seem to like my comments, they are automatically deleted by youtube:
+
+To install the ssd1306 driver for the OLED I had to copy into my working directory the ssd1306.py driver file from the git repository.  Then in Thonny File->Save As sdd1306.py, select 'Raspberry Pi Pico' (not 'My Computer').  The github repository is https://github.com/micropython/micropython-lib/blob/master/micropython/drivers/display/ssd1306/ssd1306.py.
+
+To install the ssd1306 driver for the OLED I had to copy into my working directory the ssd1306.py driver file from the git repository.  Then in Thonny File->Save As sdd1306.py, select 'Raspberry Pi Pico' (not 'My Computer') to save it to the pico filesystem.
+Chat GPT doesn't seem to like the github link according to chat GPT
+
+
+To install the ssd1306 driver for the OLED I had to copy into my
+working directory the ssd1306.py driver file from the git
+repository.  Then in Thonny File->Save As sdd1306.py, select
+'Raspberry Pi Pico' (not 'My Computer') to save it to the pico filesystem.
+
+
+chatGPT suggested this: - still didn't work 
+I got the OLED working by saving the ssd1306.py driver file directly to the Pico using Thonny. Just used File > Save As and made sure to pick the Pico as the destination.
+
+Messaged Paul about it but got no responce.

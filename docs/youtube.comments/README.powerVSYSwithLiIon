@@ -1,0 +1,3 @@
+Accepts this:
+
+@paulmcwhorter  have you thought of maybe using a lithium ion battery with nominal voltage 3.7V, that also has a battery management system attached, going into VSYS which can take 1.8-5.5V.  With pico 3.3VOut(pin36)to power the OLED and VSYS powering Vin of the GPS receiver which can take 3.0-5.5V DC.  Perhaps this could be done at the final stage of the project.  Mainly thinking this way as I think the Bread Volt would be handy to keep around for use in prototyping other projects as I intend to put our final circuit on a PCB/vera board. Or if you want to keep the design of the circuit as is you could use a Buck/Boost PCB to get 3.3/5V from it instead of the Bread Volt, this is probably overkill but may be fun to do.

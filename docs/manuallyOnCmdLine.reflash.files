@@ -24,9 +24,9 @@ wget https://datasheets.raspberrypi.com/soft/flash_nuke.uf2
 
 with boot sel pressed plug in usb cable
 cp flash_nuke.uf2 /media/smagri/RP2350/
-cp mp_firmware_unofficial_latest.uf2 /media/smagriRP2350/
+cp mp_firmware_unofficial_latest.uf2 /media/smagri/RP2350/
 mpremote connect /dev/ttyACM0 fs ls 
-mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306 : 
+mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306.py : 
 
 * then your main.py is flashed to your pico
 * mpremote connect /dev/ttyACM0 fs ls  ,should show main.py and
