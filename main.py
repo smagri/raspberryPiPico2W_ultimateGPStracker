@@ -71,6 +71,7 @@ from machine import Pin, I2C, UART
 import time
 import _thread
 from ssd1306 import SSD1306_I2C
+import math
 
 time.sleep(10)
 
@@ -190,8 +191,112 @@ GPSdata = {
     'gpsElipsoidAltitude' : 0.0,
     'geoidSeperation' : 0.0,
     'trueAltitude' : 0.0,
-    'altitude' : 0.0
+    'altitude' : 0.0,
+    'distanceP1P2' : 0.0,
+    'headingP1P2' : 0.0
 }
+
+
+def radians2degrees(radians):
+
+    # Note  that  latitude  and  longitude are  expressed  in  decimal
+    # degrees on our ssd1306 OLED display.
+
+    return (radians * 180 / math.pi)
+
+
+
+def degrees2radians(decimalDegrees):
+
+    # Note  that  latitude  and  longitude are  expressed  in  decimal
+    # degrees on our ssd1306 OLED display.
+
+    return (decimalDegrees * math.pi / 180)
+
+
+
+def distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                              longitudeDecimalDegrees1,
+                              latitudeDecimalDegrees2,
+                              longitudeDecimalDegrees2):
+
+    # We need to use non-Euclidian geometry calculations as the earth is
+    # roughly a sphere.  So we  move from one latitude,logitude value to
+    # another in  a curved  manner.  When approximating  the earth  as a
+    # sphere  even though  it is  not a  perfect sphere,  the errors  in
+    # almost all applications would be trivial.
+
+    # We need to  do our calutations in Radians so  to convert degrees
+    # to radians, radians = degrees(2PI/360).
+
+    # Radius of the earth is (m):
+    R = 6371000
+
+    # Great-circle distance (Haversine  formula) For global distances,
+    # use the Haversine formula (non-Euclidean spherical geometry):
+
+    # Calculate the included angle(central angle) theta:
+    
+    # Convert degrees to radians
+    phi1 = degrees2radians(latitudeDecimalDegrees1)
+    phi2 = degrees2radians(latitudeDecimalDegrees2)
+    lamda1 = degrees2radians(longitudeDecimalDegrees1)
+    lamda2 = degrees2radians(longitudeDecimalDegrees2)
+
+    # Differences
+    dphi = phi2 - phi1
+    dlamda = lamda2 - lamda1
+
+    # Haversine formula
+    a = math.sin(dphi/2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlamda/2)**2
+
+    # we have the included angle(central angle)
+    theta = 2 * math.asin(math.sqrt(a))
+    #print("dbg: " + "Included Angle/Central angle (haversine formula):",
+    #      theta, "radians")
+
+    # distance between to points on earth, great circle distance, in km
+    greatCircleDistance = ((theta * R) / 1000)
+    GPSdata['distanceP1P2'] = round(greatCircleDistance, 2)
+
+    return
+    
+
+
+def headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                             longitudeDecimalDegrees1,
+                             latitudeDecimalDegrees2,
+                             longitudeDecimalDegrees2):
+
+    # Initial bearing/heading (forward azimuth).  Heading is the angle
+    # measured  from  North  cockwise   in  the  azimuth  or  logitude
+    # direction.
+
+    phi1 = degrees2radians(latitudeDecimalDegrees1)
+    phi2 = degrees2radians(latitudeDecimalDegrees2)
+    lamda1 = degrees2radians(longitudeDecimalDegrees1)
+    lamda2 = degrees2radians(longitudeDecimalDegrees2)
+    
+    dlamda = lamda2 - lamda1
+
+    # For a right angle triangle
+    opposite = math.sin(dlamda) * math.cos(phi2)
+    adjacent = math.cos(phi1) * math.sin(phi2) - math.sin(phi1) * math.cos(phi2) * math.cos(dlamda)
+
+    # using atan2 means all the special cases of negative numbers are
+    # dealt with due to the angle being in different quadrants.  It
+    # returns an angle -π to +π radians (that’s -180° to +180°).
+    headingRadians = math.atan2(opposite, adjacent)
+    headingDecimalDegrees = radians2degrees(headingRadians)
+    # Normalize 0–360 as could end up in the range -180deg to 180deg
+    headingDecimalDegrees = (headingDecimalDegrees + 360.0) % 360.0
+
+    GPSdata['headingP1P2'] = round(headingDecimalDegrees, 2)
+
+    return
+
+
+
 
 
 def firstSunday(year, month):
@@ -203,10 +308,32 @@ def firstSunday(year, month):
     # Start at day 1
     import utime  # MicroPython time module
 
-    # 1. Build a "time tuple" for the first day of the month at 00:00:00.
-    # utime.mktime() expects a tuple: (year, month, day, hour, min, sec, weekday, yearday)
-    # The last two values (weekday, yearday) can be 0 because mktime() recalculates them.
+    # 1.   Build a  "time tuple"  for the  first day  of the  month at
+    # 00:00:00.  utime.mktime()  expects a  tuple: (year,  month, day,
+    # hour, min, sec, weekday, yearday)  The last two values (weekday,
+    # yearday) can be  0 because mktime() recalculates  them.
+
+    # A tuple  is an ordered  collection of  values.  It looks  like a
+    # list, but it  uses round brackets () instead  of square brackets
+    # [].Memory efficiency: Tuples use slightly less memory than lists
+    # — useful in MicroPython on  small devices like the Pico.  Faster
+    # lookups: Accessing elements in a tuple  can be a bit faster than
+    # in a list.  Unlike a list,  a tuple is immutable → once created,
+    # you cannot change its elements.
+
+
+    
+    # utime.mktime() Converts a "broken-down time" (a tuple with year,
+    # month, day, hour, etc.) into a UNIX timestamp (an integer number
+    # of seconds  since the epoch).   Epoch in MicroPython:  usually 1
+    # Jan 2000 00:00:00  UTC (not 1970 like in  full Python), although
+    # this can vary by port/board.
+
     t = utime.mktime((year, month, 1, 0, 0, 0, 0, 0))
+    # tuple output is # Example output: (2025, 8, 25, 15, 42, 5, 0, 237)
+    #
+    # Meaning:
+    # (year, month, day, hour, minute, second, weekday, yearday)
 
     # 2. Convert the timestamp back to a "localtime" tuple to find the weekday.
     # utime.localtime(t) → (year, month, day, hour, min, sec, weekday, yearday)
@@ -598,7 +725,8 @@ def displayOLED():
         else:
             # goto next page
             display.fill(0)
-            display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
+            display.text("Dp12p2:" + str(GPSdata['distanceP1P2']) + 'km', 0, 0)
+            display.text("Hp12p2:" + str(GPSdata['headingP1P2']) + 'deg', 0, 8)
             
         
     # visulise the display text on the OLED
@@ -656,10 +784,10 @@ def UTCtoLocalDateAndTime(utcTime, utcDate):
         day = int(utcDate[0:2])
 
         # Extract hour from UTC date without the utcOffset
-        utcOffset = 14 # testing if utcOffset is calculated correctly
+        #utcOffset = 14 # testing if utcOffset is calculated correctly
         hour = int(utcTime[0:2])
         utcOffset = sydneyAutoCalcUTCoffset(year, month, day, hour)
-        print(f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
+        # print("dbg: " + f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
         # Calculate hours by adding UTC offset to UTC hours, convert to string
         hour = int(utcTime[0:2]) + utcOffset
 
@@ -824,12 +952,53 @@ try:
             GPSdata['latitudeDecimalDegrees'],
             GPSdata['longitudeDecimalDegrees'])
             
-            print("Knots: ", GPSdata['knots'])
-            print("Heading: ", GPSdata['heading'])
-            print("Geoid True Altitude:", GPSdata['trueAltitude'])
-            print("GPS Ellipsoid Altitude:", GPSdata['altitude'])
+            print("Knots: ", str(GPSdata['knots']) + " km/h")
+            print("Heading: ", str(GPSdata['heading']) + " deg")
+            print("Geoid True Altitude:", str(GPSdata['trueAltitude']) + " m")
+            print("GPS Ellipsoid Altitude:", str(GPSdata['altitude']) + " m")
             #print("Mag VarDir", GPSdata['Mag VarDir'])
+
+            # Sydney
+            # latitudeDecimalDegrees1, longitudeDecimalDegrees1
+            # = -33.8688, 151.2093
+            # Melbourne
+            # latitudeDecimalDegrees2, lonitudeDecimalDegrees2
+            #= -37.8136, 144.9631  # Melbourne
+
+            # TESTING, distance and heading from Sydney and Melbourne
+            # Sydney
+            # latitudeDecimalDegrees1 = -33.8688
+            # longitudeDecimalDegrees1 = 151.2093
+            
+            # Melbourne
+            # latitudeDecimalDegrees2 = -37.8136
+            # longitudeDecimalDegrees2 = 144.9631
+
+            # TESTING, distance and heading from Melbourne to Sydney\
+            # Melbourne
+            latitudeDecimalDegrees1 = -37.8136
+            longitudeDecimalDegrees1 = 144.9631
+            
+            # Sydney
+            latitudeDecimalDegrees2 = -33.8688
+            longitudeDecimalDegrees2 = 151.2093
+            
+
+            distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                                      longitudeDecimalDegrees1,
+                                      latitudeDecimalDegrees2,
+                                      longitudeDecimalDegrees2)
+            headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                                     longitudeDecimalDegrees1,
+                                     latitudeDecimalDegrees2,
+                                     longitudeDecimalDegrees2)
+
+            print("Great-circle distance Point1 to Point2:",
+                  str(GPSdata['distanceP1P2']) + " km")
+            print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                  str(GPSdata['headingP1P2']) + " deg")
             print()
+                        
 
         # Send the data to the sdd1306 OLED display.  That is write
         # the contents of the FrameBuffer to display memory
@@ -858,7 +1027,7 @@ except KeyboardInterrupt: # catches the Keyboardinterrupt exception to
 #    time.sleep(1) # short pause to ensure clean shutdown
 
     # This deinitializes the UART interface, freeing hardware
-    # resources and avoiding interference with other parts of the
+        # resources and avoiding interference with other parts of the
     # system.
     GPS.deinit() # properly release UART before exit
 
