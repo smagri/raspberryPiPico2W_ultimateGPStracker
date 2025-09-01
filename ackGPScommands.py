@@ -72,6 +72,7 @@ import time
 import _thread
 from ssd1306 import SSD1306_I2C
 import math
+import sys
 
 time.sleep(10)
 
@@ -109,7 +110,8 @@ GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
 # ######################################################################
 
 # You can also restore the system default NMEA settings via:
-GPS.write(b'$PMTK314,-1*04\r\n')
+#GPS.write(b'$PMTK314,-1*04\r\n')
+#ackGPScommand()
 
 
 # By default the  adafruit ultimate GPS reciver only  outputs a subset
@@ -141,8 +143,11 @@ GPS.write(b'$PMTK314,-1*04\r\n')
 
 # sjm, wrks, produces minimum number of NMEA sentences, only the onces
 # we use.
-GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+#GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+#ackGPScommand()
 
+
+    
 # wrks Pauls currently, produces more that the minimum number of NMEA
 # sentences we use:
 #
@@ -195,6 +200,79 @@ GPSdata = {
     'distanceP1P2' : 0.0,
     'headingP1P2' : 0.0
 }
+
+
+
+def ackGPScommand():
+
+    # When you send configuration or control commands (PMTK sentences)
+    # over UART/I²C, the ultimate GPS  v3 module usually responds with
+    # an acknowledgement  NMEA-style sentence  so you know  whether it
+    # was accepted.
+
+    # Wait for  the GPS  to reply  with PMTK001  command, that  is the
+    # acknowledgement comamnd.
+
+    # $PMTK001,<CMD>,<FLAG>*CS<CR><LF>
+    # <CMD> = command ID you sent (e.g., 220 for update rate).
+    # <FLAG> = response status:
+    # 0 → Invalid/unsupported command
+    # 1 → Unsupported
+    # 2 → Valid command but failed
+    # 3 → Command succeeded
+    
+    #time.sleep(2)
+    startWaitTime = time.ticks_ms() # current time in ms
+
+    # 2 second timeout
+    while time.ticks_diff(time.ticks_ms(), startWaitTime) < 10000:
+        if GPS.any():  # non-blocking poll
+            line = GPS.readline()
+            if not line:
+                continue  # skip if no complete line
+            
+            # there are NMEA lines in the buffer
+            try:
+                # reads one line from the GPS UART buffer (up to a newline).
+
+                # GPS data comes in bytes, so you need to convert it to a
+                # string: decode() does this.
+                
+                # .strip() removes leading/trailing whitespace and newline
+                # characters.
+                curLine = line.decode().strip()
+            except Exception as e:
+                print("Decode error:", e)
+                continue
+
+            # DEBUG: print every line received
+            print("dbg: GPS line:", curLine)
+
+            if curLine.startswith("$PMTK001"):
+                # remove checksum part so split works cleanly
+                curLine = curLine.split("*")[0]
+                parts = curLine.split(",") # splits the NMEAline into strings
+                command = parts[1]
+                flag = int(parts[2]) # we need this as integer for if/elif
+                if flag == 0:
+                    # this print automatically adds spaces
+                    print("Command", command, "is an INVALID/UNSUPPORTED command.")
+                elif flag == 1:
+                    print("Command", command, "is an UNSUPPORTED command.")
+                elif flag == 2:
+                    print("Command", command, "is a VALID command BUT FAILED.")
+                elif flag == 3:
+                    print("Command", command, "SUCCEEDED.")
+                    return True
+                else:
+                    print("Command", command, "is an UNRECOGNISED command")
+
+    # timeout reached
+    print("GPS ACK TIMEOUT")
+    return False
+                    
+
+
 
 
 def radians2degrees(radians):
@@ -924,6 +1002,24 @@ _thread.start_new_thread(readGPSdata,())
 time.sleep(2) # so we don't start reading data till there is some in
               # the UART buffer
 try:
+
+    while GPS.any(): # non blocking way to poll the GPS reciver for new data
+        # flush buffer incase it has rubbish in it, ie not a
+        # proper NMEA sentence
+        GPS.readline()
+    
+    # if any of the commands sent to the GPS receiver fail the program exits
+    GPS.write(b'$PMTK314,-1*04\r\n')
+    if not ackGPScommand():
+        print("Failed to initialise GPS!")
+        sys.exit(1)
+
+    GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+    if not ackGPScommand():
+        print("Failed to configure GPS for NEMA sentences required!")
+        sys.exit(2)
+
+    # commands just sent to the GPS reciver have succeeded
     while True:
         # You need to acquire the lock as readGPSdata() thread may be
         # using NMEAdata dictionary.  That is populating NMEAdata with
