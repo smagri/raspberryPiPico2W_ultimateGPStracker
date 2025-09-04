@@ -72,130 +72,9 @@ import time
 import _thread
 from ssd1306 import SSD1306_I2C
 import math
+import sys
 
-time.sleep(10)
-
-
-# create i2c2 object:
-
-# Configure  I2C  on   BUS=1  of  the  raspberry   pi  pico.   Default
-# address=0x3C, GP2  = SDA, GP3  = SCL,  clock frequency is  400kHz, a
-# common fast i2c speed, aka Fast Mode.  Standard speed is 100kHz.
-
-# NOTE: the address of  the OLED is indicated at the  back of the PCB,
-# with a resistor accross two pins to indicate the address
-
-# NOTE: use i2cObj instead of i2c as i2c may be a reserved word
-# create i2cObj object of I2C micropython class
-i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
-print("Scan:", i2cObj.scan())
-
-# create display object: 128x64=columnsXlines of the SSD1306_I2C class
-display = SSD1306_I2C(128, 64, i2cObj)
-
-# create  GPS object  of the  micropython machine.UART  class with  this
-# constructor.  UART class member functions  do raw serial i/o.  You can
-# get chatGPT to display all the UART class member functions.
-GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
-
-########################################################################
-# for all PMTK commands see - PMTK command packet-Complete-A11.pdf
-
-# When the  power of  device (module) is  removed, any  modified setting
-# will  be lost  and reset  to factory  default setting.  If the  device
-# (module) has backup  power supply through VBACKUP or  coin battery, it
-# will be  able to keep the  modified setting until the  backup power is
-# exhausted.                 Packet               Type:                0
-# ######################################################################
-
-# You can also restore the system default NMEA settings via:
-GPS.write(b'$PMTK314,-1*04\r\n')
-
-
-# By default the  adafruit ultimate GPS reciver only  outputs a subset
-# of NMEA sentences. GPVTG is disabled by default to reduce bandwidth.
-# The  following line  ensures that  the  GPS reports  the GPVTG  NMEA
-# sentence.   You only  need to  do  this once  so you  don't have  to
-# include it in  further code.  That is, it permanantly  sets your GPS
-# reciver to output GPVTG NMEA strings.
-
-# Checksum calculation is the XOR of all the values between $ and *.
-# $...*<checksum>\r\n
-
-# $PMTK314,<sentence mask>*<checksum><CR><LF>
-#
-#
-# Here is an explanation of each of the fields/sentences that can be
-# enabled/disabled with the PMTK314 command. See pg 13.
-
-#$PMTK314,<GLL>,<RMC>,<VTG>,<GGA>,<GSA>,<GSV>,<GRS>,<GST>,<MALM>,<MEPH>,<MDGP>,<MDBG>,<ZDA>,0,0,0,0,0,0*<Checksum>
-
-# Even with a  fix, if the GPS is not  moving, some firmware revisions
-# suppress GPVTG  because heading/course is undefined  when velocity ≈
-# 0.  So we may remove this later anyhow???
-
-# Some MTK3339 firmware  builds (the chipset in  Adafruit Ultimate GPS
-# v3) are compiled with different  defaults.  If you’re using an older
-# breakout  or  firmware  revision,  the  sentence  set  might  differ
-# slightly, requiring explicit configuration.
-
-# sjm, wrks, produces minimum number of NMEA sentences, only the onces
-# we use.
-GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
-
-# wrks Pauls currently, produces more that the minimum number of NMEA
-# sentences we use:
-#
-#GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
-
-
-# Datasheet: Turn on everything (not all of it is parsed!)
-# gps.send_command(b'PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0')
-
-# create the atomic lock in python, in c++ we put dataLock definition
-# in header file.
-dataLock = _thread.allocate_lock()
-
-# we can shutdown the thread with Ctrl-C cleanly, like the destructor
-# in c++
-keepRunning = True
-
-# this is a python dictionary, like an array combined with a map in c
-# and c++ index=GPGGA, data=="" at this stage
-#
-# The raw NMEAdata dictionary.
-#
-# This is  the syntax  of how you  define a key,value  pair, or  map, in
-# python, in  what is called a  dictionary. You can initialise  an empty
-# dictionary with empty_dict = {}
-
-NMEAdata = {
-    'GPGGA' : "",
-    'GPGSA' : "",
-    'GPRMC' : "",
-    'GPVTG' : ""
-}
-
-# Interpreted GPS UART data output strings/NMEAdata data lines into a
-# dictionary of key,value pairs.  key=string, value=integer, float,
-# string or boolean here.  This is a python dictionary.
-GPSdata = {
-    'latitudeDecimalDegrees' : 0.0,
-    'longitudeDecimalDegrees' : 0.0,
-    'heading' : 0.0,
-    'fix' : False,
-    'numSattelites4fix' : 0,
-    'knots' : 0.0,
-    'time' : '00:00:00',
-    'date' : '00/00/0000',
-    'gpsElipsoidAltitude' : 0.0,
-    'geoidSeperation' : 0.0,
-    'trueAltitude' : 0.0,
-    'altitude' : 0.0,
-    'distanceP1P2' : 0.0,
-    'headingP1P2' : 0.0
-}
-
+#time.sleep(10)
 
 def radians2degrees(radians):
 
@@ -292,8 +171,9 @@ def headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
     headingDecimalDegrees = (headingDecimalDegrees + 360.0) % 360.0
 
     GPSdata['headingP1P2'] = round(headingDecimalDegrees, 2)
-
+    
     return
+
 
 
 
@@ -439,14 +319,16 @@ def readGPSdata():
     # exception intermittently.  yeald_thread()  forces the other thread
     # or global initialisation  to run first.  Note  that a time.sleep()
     # here will yield this thread also.
-    yield_thread()
+#    yield_thread()
+    #time.sleep(10)
 
     print("Thread Running readGPSdata")
-    
+    #print("dbg: readGPSdata: keepRunning=",keepRunning)
 
     # global means use the variable values defined outside this function
     # at the global(module) level
-    global keepRunning, NMEAdata, GPS # NMEAdata is a dictionary, like a map in c++
+    #global keepRunning, NMEAdata, GPS # NMEAdata is a dictionary, like a map in c++
+    global NMEAdata # NMEAdata is a dictionary, like a map in c++
 
     
     # Initialise the GPS NMEA strings
@@ -455,8 +337,12 @@ def readGPSdata():
     GPRMC = ""
     GPVTG = ""
     # do nothing if there is no data in the buffer
+    # while not GPS.any():
+    #     pass
     while not GPS.any():
-        pass
+        time.sleep(0.1) # thread yeilds to avoid busy waits, though I
+                        # think GPS.any() is non-blocking
+        #print("GPS UART has data, starting read loop...")   
     # now we have data, read buffer till it's empty, the stale
     # data, this clears the buffer
     while GPS.any():
@@ -474,14 +360,14 @@ def readGPSdata():
             # subset of UTF-8)
             myChar=GPS.read(1).decode('utf-8')
             # supress line feed, so you can contiue to read accross
-            #print(myChar, end="")
+            ##print(myChar, end="")
             myNMEA+=myChar
             if myChar == '\n':
                 # When EOL is reached strip the EOL char from myNMEA string.
                 myNMEA = myNMEA.strip()
                 # to see what NMEA data I am getting as initially we
                 # weren't getting GPVTG data
-                #print(myNMEA)
+                #print("dbg: readGPSdata, myNMEA=", myNMEA)
                 # store the NMEAdata strings into variables
 
                 # gets characters 1 to 5 in the current NMEA string
@@ -520,7 +406,7 @@ def readGPSdata():
 
 # user defined functions #######################################################
 
-def parseAndProcessGPSdata():
+def parseAndProcessGPSdata(NMEAmain):
     
     # Note that in the main.py  dictionary thread NMEdata is copied to
     # NMEAmain  dictionary.  Process  the RAW  NMEA data  strings into
@@ -533,7 +419,10 @@ def parseAndProcessGPSdata():
     # Do we have a fix on the GPS module, 6th element in the NMEA
     # GPGGA string
     if len(NMEAmain['GPGGA'].split(',')) < 6:
+        #print("dbg: parseAndProcessGPSdata:", myChar, end="")
+        #print("dbg: parseAndProcessGPSdata:", NMEAmain)
         return
+    
     readFix=int(NMEAmain['GPGGA'].split(',')[6])
     if readFix !=0:
         GPSdata['fix'] = True
@@ -865,20 +754,13 @@ def UTCtoLocalDateAndTime(utcTime, utcDate):
 
 
 
-###############################################################################
-#                                   main.cpp                                  #
-###############################################################################
-
-
-butOnePin = 12 # button one is connected to GPIO pin 12
-butOne = Pin(butOnePin, Pin.IN, Pin.PULL_UP) # object associated GPIO pin 12
-butOneUp = 0 # button goes down to up
-butOneDown = 0# button goes up to down
-butOneOld = 1 # last time through the loop the buttion was up
- 
-screenOne = True # display screen one fist
- 
 def butOneIRQ(pin):
+
+    ############################################################################
+    # irq's are seperate threads in mycropython, they are preemptive
+    #
+    ############################################################################
+
     global butOneUp,butOneDown
     global butOneOld #previous state of button
     global screenOne
@@ -906,137 +788,428 @@ def butOneIRQ(pin):
         print('Button One Triggered')
     butOneOld=butOneValue
 
-############################################################################
-# irq's are seperate threads in mycropython, they are preemptive
-#
-############################################################################
-
-# button going from 1 to 0, call interrupt routine called butOneIRQ
-# OR
-# button going from 0 to 1, cal interrupt routine called butOneIRQ
-butOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = butOneIRQ)
 
 
+###############################################################################
+#       main thread(trying to overcome mmicropython thread limitations)       #
+###############################################################################
 
-# launch the reading data thread readGPSdata()
-_thread.start_new_thread(readGPSdata,())
-time.sleep(2) # so we don't start reading data till there is some in
-              # the UART buffer
-try:
+# Trying to make sure globals are defined before other threads are launched.
+
+
+def main():
+    # create i2c2 object:
+
+    # Configure  I2C  on   BUS=1  of  the  raspberry   pi  pico.   Default
+    # address=0x3C, GP2  = SDA, GP3  = SCL,  clock frequency is  400kHz, a
+    # common fast i2c speed, aka Fast Mode.  Standard speed is 100kHz.
+
+    # NOTE: the address of  the OLED is indicated at the  back of the PCB,
+    # with a resistor accross two pins to indicate the address
+
+    # NOTE: use i2cObj instead of i2c as i2c may be a reserved word
+    # create i2cObj object of I2C micropython class
+    i2cObj = I2C(1, sda=Pin(2), scl=Pin(3), freq=400000)
+    print("Scan:", i2cObj.scan())
+
+    # create display object: 128x64=columnsXlines of the SSD1306_I2C class
+    global display
+    display = SSD1306_I2C(128, 64, i2cObj)
+
+    # create  GPS object  of the  micropython machine.UART  class with  this
+    # constructor.  UART class member functions  do raw serial i/o.  You can
+    # get chatGPT to display all the UART class member functions.
+    global GPS
+    GPS = UART(1, baudrate = 9600, tx=machine.Pin(8), rx=machine.Pin(9))
+
+    ########################################################################
+    # for all PMTK commands see - PMTK command packet-Complete-A11.pdf
+
+    # When the  power of  device (module) is  removed, any  modified setting
+    # will  be lost  and reset  to factory  default setting.  If the  device
+    # (module) has backup  power supply through VBACKUP or  coin battery, it
+    # will be  able to keep the  modified setting until the  backup power is
+    # exhausted.                 Packet               Type:                0
+    # ######################################################################
+
+    # You can also restore the system default NMEA settings via:
+    # GPS.write(b'$PMTK314,-1*04\r\n')
+    # # hack that works time.sleep(10)
+    # while not ackGPScommand():
+    #     #print(myNMEA)
+    #     pass
+    # print("ACK received for instruction to GPS to produce default NMEA"
+    #       " sentences.")
+    timeoutGPSwrite = 1
     while True:
-        # You need to acquire the lock as readGPSdata() thread may be
-        # using NMEAdata dictionary.  That is populating NMEAdata with
-        # GPS reciver UART string values.
-        dataLock.acquire()
-        NMEAmain = NMEAdata.copy()
-        dataLock.release()
-        #print(NMEAmain['GPGGA'])
-        parseAndProcessGPSdata()
-        if GPSdata['fix'] == False:
-            print("Waiting for Fix . . .")
-        else:
-            # we have a fix
+        GPS.write(b'$PMTK314,-1*04\r\n')
+        # hack that works time.sleep(10)
+        if ackGPScommand():
+            print("ACK received for instruction to GPS to produce default NMEA"
+                  " sentences.")
+            print("Needed to send", timeoutGPSwrite, "GPS.write() command/s "
+                  "for GPS reciever to be ready.")
+            break
+        elif timeoutGPSwrite == 20:
+            print("TIMEOUT, GPS reciver not ready for commands yet. "
+                  "Tried to send", timeoutGPSwrite, "GPS.write() command/s.")
+            sys.exit()
 
-            # NOTE, the  more sattilites we  get for our fix  the more
-            # accurate the  position, ie latitude and  longitude.  You
-            # can verify this on google earth or openstreetmap.
-            
-            print("We have a satellite fix, Ultimate GPS Tracker Report: ")
-            print("Time:", GPSdata['time'])
-            print("Date:", GPSdata['date'])
-            print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
-            
-            # we extract latitude and longitude in the format of
-            # openstreetmap and google earth
-            print("Latitude and Longitude: ",
-            GPSdata['latitudeDecimalDegrees'],
-            GPSdata['longitudeDecimalDegrees'])
-            
-            print("Knots: ", str(GPSdata['knots']) + " km/h")
-            print("Heading: ", str(GPSdata['heading']) + " deg")
-            print("Geoid True Altitude:", str(GPSdata['trueAltitude']) + " m")
-            print("GPS Ellipsoid Altitude:", str(GPSdata['altitude']) + " m")
-            #print("Mag VarDir", GPSdata['Mag VarDir'])
+        timeoutGPSwrite += 1
 
-            # Sydney
-            # latitudeDecimalDegrees1, longitudeDecimalDegrees1
-            # = -33.8688, 151.2093
-            # Melbourne
-            # latitudeDecimalDegrees2, lonitudeDecimalDegrees2
-            #= -37.8136, 144.9631  # Melbourne
+    # By default the  adafruit ultimate GPS reciver only  outputs a subset
+    # of NMEA sentences. GPVTG is disabled by default to reduce bandwidth.
+    # The  following line  ensures that  the  GPS reports  the GPVTG  NMEA
+    # sentence.   You only  need to  do  this once  so you  don't have  to
+    # include it in  further code.  That is, it permanantly  sets your GPS
+    # reciver to output GPVTG NMEA strings.
 
-            # TESTING, distance and heading from Sydney and Melbourne
-            # Sydney
-            # latitudeDecimalDegrees1 = -33.8688
-            # longitudeDecimalDegrees1 = 151.2093
-            
-            # Melbourne
-            # latitudeDecimalDegrees2 = -37.8136
-            # longitudeDecimalDegrees2 = 144.9631
+    # Checksum calculation is the XOR of all the values between $ and *.
+    # $...*<checksum>\r\n
 
-            # TESTING, distance and heading from Melbourne to Sydney\
-            # Melbourne
-            latitudeDecimalDegrees1 = -37.8136
-            longitudeDecimalDegrees1 = 144.9631
-            
-            # Sydney
-            latitudeDecimalDegrees2 = -33.8688
-            longitudeDecimalDegrees2 = 151.2093
-            
+    # $PMTK314,<sentence mask>*<checksum><CR><LF>
+    #
+    #
+    # Here is an explanation of each of the fields/sentences that can be
+    # enabled/disabled with the PMTK314 command. See pg 13.
 
-            distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                                      longitudeDecimalDegrees1,
-                                      latitudeDecimalDegrees2,
-                                      longitudeDecimalDegrees2)
-            headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                                     longitudeDecimalDegrees1,
-                                     latitudeDecimalDegrees2,
-                                     longitudeDecimalDegrees2)
+    #$PMTK314,<GLL>,<RMC>,<VTG>,<GGA>,<GSA>,<GSV>,<GRS>,<GST>,<MALM>,<MEPH>,<MDGP>,<MDBG>,<ZDA>,0,0,0,0,0,0*<Checksum>
 
-            print("Great-circle distance Point1 to Point2:",
-                  str(GPSdata['distanceP1P2']) + " km")
-            print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                  str(GPSdata['headingP1P2']) + " deg")
-            print()
-                        
+    # Even with a  fix, if the GPS is not  moving, some firmware revisions
+    # suppress GPVTG  because heading/course is undefined  when velocity ≈
+    # 0.  So we may remove this later anyhow???
 
-        # Send the data to the sdd1306 OLED display.  That is write
-        # the contents of the FrameBuffer to display memory
-        displayOLED()
-        time.sleep(1)
-        
-        # NOTE: this does not overflow the buffer as readGPSdata()
-        # executes in another thread.
-        # time.sleep(10)
+    # Some MTK3339 firmware  builds (the chipset in  Adafruit Ultimate GPS
+    # v3) are compiled with different  defaults.  If you’re using an older
+    # breakout  or  firmware  revision,  the  sentence  set  might  differ
+    # slightly, requiring explicit configuration.
+
+    # Instruct the GPS reciever to produces the minimum number of NMEA
+    # sentences, only the onces we use.  Waits till the GPS reciver is
+    # ready to output valid NMEA sentences.
+    timeoutGPSwrite = 1
+    while True:
+        GPS.write(b"$PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
+        # hack that works time.sleep(10)
+        if ackGPScommand():
+            print("ACK received for instruction to GPS to produce only the 4 NMEA"
+                  " sentences required.")
+            print("Needed to send", timeoutGPSwrite, "GPS.write() command/s "
+                  "for GPS reciever to be ready.")
+            break
+        elif timeoutGPSwrite == 20:
+            print("TIMEOUT, GPS reciver not ready for commands yet. "
+                  "Tried to send", timeoutGPSwrite, "GPS.write() command/s.")
+            sys.exit()
+
+        timeoutGPSwrite += 1
+
+    # wrks Pauls currently, produces more that the minimum number of NMEA
+    # sentences we use:
+    #
+    #GPS.write(b"$PMTK314,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0*28\r\n")
 
 
-# This MicroPython code block is part of an except clause that handles
-# a KeyboardInterrupt — typically triggered when you press Ctrl+C on
-# your keyboard to stop a running script.
+    # Datasheet: Turn on everything (not all of it is parsed!)
+    # gps.send_command(b'PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0')
 
-except KeyboardInterrupt: # catches the Keyboardinterrupt exception to
-                          # the program can exit gracefully instead of
-                          # crashing If we get a lockup it allows you
-                          # to use the keyboard to interrupt it
-                          # keyboardinterrupt may be just a ctrl-C
+    # create the atomic lock in python, in c++ we put dataLock definition
+    # in header file.
+    global dataLock
+    dataLock = _thread.allocate_lock()
 
-    keepRunning = False # kill main thread 
+    # we can shutdown the thread with Ctrl-C cleanly, like the destructor
+    # in c++
+    global keepRunning
+    keepRunning = True
 
-    print("\nStopping Program . . . Cleaning Up UART")
-    # we don't know why sleeps don't work here but do in paul's code
-#    time.sleep(1) # short pause to ensure clean shutdown
+    # this is a python dictionary, like an array combined with a map in c
+    # and c++ index=GPGGA, data=="" at this stage
+    #
+    # The raw NMEAdata dictionary.
+    #
+    # This is  the syntax  of how you  define a key,value  pair, or  map, in
+    # python, in  what is called a  dictionary. You can initialise  an empty
+    # dictionary with empty_dict = {}
 
-    # This deinitializes the UART interface, freeing hardware
-        # resources and avoiding interference with other parts of the
-    # system.
-    GPS.deinit() # properly release UART before exit
+    global NMEAdata
+    NMEAdata = {
+        'GPGGA' : "",
+        'GPGSA' : "",
+        'GPRMC' : "",
+        'GPVTG' : ""
+    }
 
-#    time.sleep(1) # short pause to ensure clean shutdown        
+    # Interpreted GPS UART data output strings/NMEAdata data lines into a
+    # dictionary of key,value pairs.  key=string, value=integer, float,
+    # string or boolean here.  This is a python dictionary.
+    global GPSdata
+    GPSdata = {
+        'latitudeDecimalDegrees' : 0.0,
+        'longitudeDecimalDegrees' : 0.0,
+        'heading' : 0.0,
+        'fix' : False,
+        'numSattelites4fix' : 0,
+        'knots' : 0.0,
+        'time' : '00:00:00',
+        'date' : '00/00/0000',
+        'gpsElipsoidAltitude' : 0.0,
+        'geoidSeperation' : 0.0,
+        'trueAltitude' : 0.0,
+        'altitude' : 0.0,
+        'distanceP1P2' : 0.0,
+        'headingP1P2' : 0.0
+    }
 
-    # blank the OLED screen, ready for next display output
-    display.fill(0)
-    display.show()
 
-    print("Exited Cleanly")
-     
+    # Setup IRQ on yellow button press to goto next page on ssd1302 OLED.
     
+    global butOnePin # button one is connected to GPIO pin 12
+    butOnePin = 12 # button one is connected to GPIO pin 12
+    global butOne
+    butOne = Pin(butOnePin, Pin.IN, Pin.PULL_UP) # object associated GPIO pin 12
+    global butOneUp
+    butOneUp = 0 # button goes down to up
+    global butOneDown
+    butOneDown = 0# button goes up to down
+    global butOneOld
+    butOneOld = 1 # last time through the loop the buttion was up
+    
+    global screenOne # display screen one fist
+    screenOne = True # display screen one fist
+ 
+    # button going from 1 to 0, call interrupt routine called butOneIRQ
+    # OR
+    # button going from 0 to 1, cal interrupt routine called butOneIRQ
+    butOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = butOneIRQ)
+
+
+
+    # launch the reading data thread readGPSdata()
+    _thread.start_new_thread(readGPSdata,())
+    time.sleep(2) # so we don't start reading data till there is some in
+                  # the UART buffer
+
+
+    try:
+        while True:
+            # You need to acquire the lock as readGPSdata() thread may be
+            # using NMEAdata dictionary.  That is populating NMEAdata with
+            # GPS reciver UART string values.
+            dataLock.acquire()
+            NMEAmain = NMEAdata.copy()
+            dataLock.release()
+            #print(NMEAmain['GPGGA'])
+            parseAndProcessGPSdata(NMEAmain)
+            if GPSdata['fix'] == False:
+                print("Waiting for Fix . . .")
+            else:
+                # we have a fix
+
+                # NOTE, the  more sattilites we  get for our fix  the more
+                # accurate the  position, ie latitude and  longitude.  You
+                # can verify this on google earth or openstreetmap.
+
+                print("We have a satellite fix, Ultimate GPS Tracker Report: ")
+                print("Time:", GPSdata['time'])
+                print("Date:", GPSdata['date'])
+                print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
+
+                # we extract latitude and longitude in the format of
+                # openstreetmap and google earth
+                print("Latitude and Longitude: ",
+                GPSdata['latitudeDecimalDegrees'],
+                GPSdata['longitudeDecimalDegrees'])
+
+                print("Knots: ", str(GPSdata['knots']) + " km/h")
+                print("Heading: ", str(GPSdata['heading']) + " deg")
+                print("Geoid True Altitude:", str(GPSdata['trueAltitude']) + " m")
+                print("GPS Ellipsoid Altitude:", str(GPSdata['altitude']) + " m")
+                #print("Mag VarDir", GPSdata['Mag VarDir'])
+
+                # Sydney
+                # latitudeDecimalDegrees1, longitudeDecimalDegrees1
+                # = -33.8688, 151.2093
+                # Melbourne
+                # latitudeDecimalDegrees2, lonitudeDecimalDegrees2
+                #= -37.8136, 144.9631  # Melbourne
+
+                # TESTING, distance and heading from Sydney and Melbourne
+                # Sydney
+                # latitudeDecimalDegrees1 = -33.8688
+                # longitudeDecimalDegrees1 = 151.2093
+
+                # Melbourne
+                # latitudeDecimalDegrees2 = -37.8136
+                # longitudeDecimalDegrees2 = 144.9631
+
+                # TESTING, distance and heading from Melbourne to Sydney\
+                # Melbourne
+                latitudeDecimalDegrees1 = -37.8136
+                longitudeDecimalDegrees1 = 144.9631
+
+                # Sydney
+                latitudeDecimalDegrees2 = -33.8688
+                longitudeDecimalDegrees2 = 151.2093
+
+
+                distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                                          longitudeDecimalDegrees1,
+                                          latitudeDecimalDegrees2,
+                                          longitudeDecimalDegrees2)
+                headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                                         longitudeDecimalDegrees1,
+                                         latitudeDecimalDegrees2,
+                                         longitudeDecimalDegrees2)
+
+                print("Great-circle distance Point1 to Point2:",
+                      str(GPSdata['distanceP1P2']) + " km")
+                print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                      str(GPSdata['headingP1P2']) + " deg")
+                print()
+
+
+            # Send the data to the sdd1306 OLED display.  That is write
+            # the contents of the FrameBuffer to display memory
+            displayOLED()
+            time.sleep(1)
+
+            # NOTE: this does not overflow the buffer as readGPSdata()
+            # executes in another thread.
+            # time.sleep(10)
+
+
+    # This MicroPython code block is part of an except clause that handles
+    # a KeyboardInterrupt — typically triggered when you press Ctrl+C on
+    # your keyboard to stop a running script.
+
+    except KeyboardInterrupt: # catches the Keyboardinterrupt exception to
+                              # the program can exit gracefully instead of
+                              # crashing If we get a lockup it allows you
+                              # to use the keyboard to interrupt it
+                              # keyboardinterrupt may be just a ctrl-C
+
+        keepRunning = False # kill main thread 
+
+        print("\nStopping Program . . . Cleaning Up UART")
+        # we don't know why sleeps don't work here but do in paul's code
+        #    time.sleep(1) # short pause to ensure clean shutdown
+
+        # This deinitializes the UART interface, freeing hardware
+            # resources and avoiding interference with other parts of the
+        # system.
+        GPS.deinit() # properly release UART before exit
+
+        #    time.sleep(1) # short pause to ensure clean shutdown        
+
+        # blank the OLED screen, ready for next display output
+        display.fill(0)
+        display.show()
+
+        print("Exited Cleanly")
+
+    
+def ackGPScommand():
+
+    # When you send configuration or control commands (PMTK sentences)
+    # over UART/I²C, the ultimate GPS  v3 module usually responds with
+    # an acknowledgement  NMEA-style sentence  so you know  whether it
+    # was accepted.
+
+    # Wait for  the GPS  to reply  with PMTK001  command, that  is the
+    # acknowledgement comamnd.
+
+    # $PMTK001,<CMD>,<FLAG>*CS<CR><LF>
+    # <CMD> = command ID you sent (e.g., 220 for update rate).
+    # <FLAG> = response status:
+    # 0 → Invalid/unsupported command
+    # 1 → Unsupported
+    # 2 → Valid command but failed
+    # 3 → Command succeeded
+    
+    #time.sleep(2)
+
+    myNMEA = ""
+    startWaitTime = time.ticks_ms() # current time in ms
+
+    # 500ms second timeout
+    while time.ticks_diff(time.ticks_ms(), startWaitTime) < 500:
+
+        if GPS.any():  # non-blocking poll
+            # Read one byte at a time, ie one char at a time till
+            # EOL(in the while keepRunning loop), and decode it
+            # from a byte to a string using utf-8 codec(ASCII is a
+            # subset of UTF-8)
+            try:
+                myChar=GPS.read(1).decode('utf-8')
+                # supress line feed, so you can contiue to read accross
+                #print(myChar, end="")
+            except UnicodeError:
+                print("ackGPScommand: skip invalid byte")
+                continue # skip invalid byte, some garbage
+            
+            
+            myNMEA+=myChar
+            if myChar == '\n':
+                myNMEA = myNMEA.strip()
+                # When EOL is reached strip the EOL char from myNMEA string.
+
+                # to see what NMEA data I am getting as initially we
+                # weren't getting GPVTG data
+                print("dbg: ackGPScommand myNMEA=", myNMEA)
+                # store the NMEAdata strings into variables
+
+                if myNMEA.startswith("$PMTK001"):
+                                    
+                    # remove checksum part so split works cleanly
+                    #print("dbg: $PMTK001 found=", myNMEA)
+                    myNMEA = myNMEA.split("*")[0]
+                    parts = myNMEA.split(",") # splits the NMEAline into strings
+
+                    # If  for  some reason  you  get  a malformed PMTK  sentence
+                    try:
+                        command = parts[1]
+                        # we need this as integer for if/elif
+                        flag = int(parts[2])
+                    except ValueError:
+                        # commmand and/or flag setting failed
+                        flag = -1
+                        print("ackGPScommand: MALFORMED ACK")
+                        return False
+                    
+
+                    if flag == 0:
+                        # this print automatically adds spaces
+                        print("Command", command, "is an INVALID/UNSUPPORTED command.")
+                        return False
+                    elif flag == 1:
+                        print("Command", command, "is an UNSUPPORTED command.")
+                        return False
+                    elif flag == 2:
+                        print("Command", command, "is a VALID command BUT FAILED.")
+                        return False
+                    elif flag == 3:
+                        print("Command", command, "SUCCEEDED.")
+                        return True
+                    else:
+                        print("Command", command, "is an UNRECOGNISED command")
+                        return False
+
+
+                myNMEA = "" # reset to read the next NMEA data string
+
+    # timeout reached
+    print("GPS ACK timeout")
+    display.text("ACK Timeout...", 0, 0)
+    return False
+
+#######################################################################
+#                             call main.py                            #
+#######################################################################
+
+main()
+
+
+#######################################################################
+#                             call main.py                            #
+#######################################################################
