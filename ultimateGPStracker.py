@@ -88,7 +88,8 @@ def radians2degrees(radians):
 def degrees2radians(decimalDegrees):
 
     # Note  that  latitude  and  longitude are  expressed  in  decimal
-    # degrees on our ssd1306 OLED display.
+    # degrees on our  ssd1306 OLED display.  That is  the GPS reciever
+    # outputs values in decimalDegrees.
 
     return (decimalDegrees * math.pi / 180)
 
@@ -126,7 +127,7 @@ def distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
     dphi = phi2 - phi1
     dlamda = lamda2 - lamda1
 
-    # Haversine formula
+    # Haversine formula, takes in the curvature of the earth.
     a = math.sin(dphi/2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlamda/2)**2
 
     # we have the included angle(central angle)
@@ -834,12 +835,6 @@ def main():
 
     # You can also restore the system default NMEA settings via:
     # GPS.write(b'$PMTK314,-1*04\r\n')
-    # # hack that works time.sleep(10)
-    # while not ackGPScommand():
-    #     #print(myNMEA)
-    #     pass
-    # print("ACK received for instruction to GPS to produce default NMEA"
-    #       " sentences.")
     timeoutGPSwrite = 1
     while True:
         GPS.write(b'$PMTK314,-1*04\r\n')
@@ -990,6 +985,7 @@ def main():
     time.sleep(2) # so we don't start reading data till there is some in
                   # the UART buffer
 
+    numTimesToAsk = 0
 
     try:
         while True:
@@ -1045,28 +1041,48 @@ def main():
 
                 # TESTING, distance and heading from Melbourne to Sydney\
                 # Melbourne
-                latitudeDecimalDegrees1 = -37.8136
-                longitudeDecimalDegrees1 = 144.9631
+                # latitudeDecimalDegrees1 = -37.8136
+                # longitudeDecimalDegrees1 = 144.9631
 
-                # Sydney
-                latitudeDecimalDegrees2 = -33.8688
-                longitudeDecimalDegrees2 = 151.2093
+                # # Sydney
+                # latitudeDecimalDegrees2 = -33.8688
+                # longitudeDecimalDegrees2 = 151.2093
 
+                # Pauls property from end to gate:
+                # latitudeDecimalDegrees1? 0.478028
+                # longitudeDecimalDegrees1? 33.163614
+                # latitudeDecimalDegrees2? 0.479399
+                # longitudeDecimalDegrees2? 33.165501
+                # Great-circle distance Point1 to Point2: 0.26 km
+                # Heading/Bearing (Longitude Degrees from North) Point1 to Point2: 54.07 deg
 
-                distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                                          longitudeDecimalDegrees1,
-                                          latitudeDecimalDegrees2,
-                                          longitudeDecimalDegrees2)
-                headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                                         longitudeDecimalDegrees1,
-                                         latitudeDecimalDegrees2,
-                                         longitudeDecimalDegrees2)
+                numTimesToAsk += 1;
+                for i in range(1):
 
-                print("Great-circle distance Point1 to Point2:",
-                      str(GPSdata['distanceP1P2']) + " km")
-                print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                      str(GPSdata['headingP1P2']) + " deg")
-                print()
+                    # Only ask for input once at this stage
+                    if (numTimesToAsk > 1):
+                        break
+
+                    print("Enter Coordinates in Decimal Degrees:")
+                    latitudeDecimalDegrees1 = float(input("\tlatitudeDecimalDegrees1? "))
+                    longitudeDecimalDegrees1 = float(input("\tlongitudeDecimalDegrees1? "))
+                    latitudeDecimalDegrees2 = float(input("\tlatitudeDecimalDegrees2? "))
+                    longitudeDecimalDegrees2 = float(input("\tlongitudeDecimalDegrees2? "))
+                    distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                                              longitudeDecimalDegrees1,
+                                              latitudeDecimalDegrees2,
+                                              longitudeDecimalDegrees2)
+                    headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                                             longitudeDecimalDegrees1,
+                                             latitudeDecimalDegrees2,
+                                             longitudeDecimalDegrees2)
+
+                    print("Great-circle distance Point1 to Point2:",
+                          str(GPSdata['distanceP1P2']) + " km")
+                    print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                          str(GPSdata['headingP1P2']) + " deg")
+                    print()
+                    time.sleep(10)
 
 
             # Send the data to the sdd1306 OLED display.  That is write
