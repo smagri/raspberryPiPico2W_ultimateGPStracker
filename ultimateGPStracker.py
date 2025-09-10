@@ -135,8 +135,8 @@ def distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
     #print("dbg: " + "Included Angle/Central angle (haversine formula):",
     #      theta, "radians")
 
-    # distance between to points on earth, great circle distance, in km
-    greatCircleDistance = ((theta * R) / 1000)
+    # distance between to points on earth, great circle distance, in m
+    greatCircleDistance = (theta * R)
     GPSdata['distanceP1P2'] = round(greatCircleDistance, 2)
 
     return
@@ -592,6 +592,8 @@ def displayOLED():
 
     # display.text(text, column, row) where 0,0 is the top left
     # hand corner of the display
+
+    global latitudePoint1, longitudePoint1, latitudePoint2, longitudePoint2
     
     display.fill(0) # blank it out
     if GPSdata['fix'] == False:
@@ -600,7 +602,8 @@ def displayOLED():
     else:
         # we have a fix
 
-        if screenOne==True:
+        # use modulus to switch between the screens
+        if screenNum%3 == 0: #no remainder
             #display.text("ULTIMATE GPS: ", 0, 0)
             display.fill(0) # so one screen doesn't override the other
             display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
@@ -612,11 +615,35 @@ def displayOLED():
             #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
             display.text("TrueAlt:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
             display.text("GPSAlt:" + str(GPSdata['altitude']) + 'm', 0, 56)
-        else:
+        elif screenNum%3 == 1:
             # goto next page
+            latitudePoint1 = GPSdata['latitudeDecimalDegrees']
+            longitudePoint1 = GPSdata['longitudeDecimalDegrees']
             display.fill(0)
-            display.text("Dp12p2:" + str(GPSdata['distanceP1P2']) + 'km', 0, 0)
-            display.text("Hp12p2:" + str(GPSdata['headingP1P2']) + 'deg', 0, 8)
+            display.text("p1Lat=" + str(latitudePoint1), 0, 0)
+            display.text("p1Lon=" + str(longitudePoint1), 0, 8)
+            display.text("Move to p2...", 0, 16)
+            display.text("Press Button1...", 0, 24)
+        elif screenNum%3 == 2: # remainder = 2
+            display.fill(0)
+            display.text("p1Lat=" + str(latitudePoint1), 0, 0)
+            display.text("p1Lon=" + str(longitudePoint1), 0, 8)
+            display.text("Move to p2 ...", 0, 16)
+            display.text("Press Button1 ...", 0, 24)
+            latitudePoint2 = GPSdata['latitudeDecimalDegrees']
+            longitudePoint2 = GPSdata['longitudeDecimalDegrees']
+            display.text("p2Lat=" + str(latitudePoint2), 0, 32)
+            display.text("p2Lon=" + str(longitudePoint2), 0, 40)
+            distanceP1P2 = distanceBtw2PointsOnEarth(latitudePoint1,
+                                                     longitudePoint1,
+                                                     latitudePoint2,
+                                                     longitudePoint2)
+            headingP1P2 = headingBtw2PointsOnEarth(latitudePoint1,
+                                                   longitudePoint1,
+                                                   latitudePoint2,
+                                                   longitudePoint2)
+            display.text("Dp12p2:" + str(distanceP1P2) + 'm', 0, 48)
+            display.text("Hp12p2:" + str(headingP1P2) + 'deg', 0, 56)
             
         
     # visulise the display text on the OLED
@@ -764,7 +791,7 @@ def butOneIRQ(pin):
 
     global butOneUp,butOneDown
     global butOneOld #previous state of button
-    global screenOne
+    global screenNum
     butOneValue = butOne.value() # member function of butOne object
     #print("butOneValue", butOneValue)
 
@@ -785,10 +812,41 @@ def butOneIRQ(pin):
         # This is atomic for simple assignments like booleans in
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
-        screenOne = not screenOne
-        print('Button One Triggered')
+        screenNum += 1
+        print('dbg: butOneIRQ: Button One Triggered')
     butOneOld=butOneValue
 
+    
+
+# def button2IRQ(pin):
+
+#     global button2Up,button2Down
+#     global button2Old #previous state of button
+#     global screenOne
+#     button2Value = button2.value() # member function of button2 object
+#     #print("button2Value", button2Value)
+
+#     # denouncing the switch
+#     #
+#     if button2Value==0:
+#         button2Down = time.ticks_ms() # time when button pressed down
+#     else:
+#         button2Value==1
+#         button2Up = time.ticks_ms() # time when button goes back up
+
+#     # If in the last loop the button was in the up state and is now
+#     # pressed down in this loop, with a 50ms hysteresis(for switch
+#     # debounce noise, eg may get multiple 0's before you get a 1 and
+#     # visa versa).  Also, obviously button is pressed down after it was
+#     # in the up state last so button2Down-button2Up is a +ve value.
+#     if (button2Old==1) and (button2Value==0) and ((button2Down-button2Up) > 50):
+#         # This is atomic for simple assignments like booleans in
+#         # mycropython.  Counters, lists, dicts, multi-step operations:
+#         # use disable_irq() or carefully designed atomic methods.
+#         screenOne = not screenOne
+#         print('Button Two Triggered')
+#     button2Old=button2Value
+   
 
 
 ###############################################################################
@@ -973,20 +1031,22 @@ def main():
     global screenOne # display screen one fist
     screenOne = True # display screen one fist
  
-    # button going from 1 to 0, call interrupt routine called butOneIRQ
+    # button going from 1 to 0, call interrupt routine called button2irq
     # OR
-    # button going from 0 to 1, cal interrupt routine called butOneIRQ
+    # button going from 0 to 1, cal interrupt routine called button2irq
     butOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = butOneIRQ)
 
 
+    # Setup IRQ on yellow button press to goto next page on ssd1302 OLED
 
     # launch the reading data thread readGPSdata()
     _thread.start_new_thread(readGPSdata,())
     time.sleep(2) # so we don't start reading data till there is some in
                   # the UART buffer
 
-    numTimesToAsk = 0
-
+    #numTimesToAsk = 0
+    global screenNum
+    screenNum = 0
     try:
         while True:
             # You need to acquire the lock as readGPSdata() thread may be
@@ -1056,33 +1116,33 @@ def main():
                 # Great-circle distance Point1 to Point2: 0.26 km
                 # Heading/Bearing (Longitude Degrees from North) Point1 to Point2: 54.07 deg
 
-                numTimesToAsk += 1;
-                for i in range(1):
+                # numTimesToAsk += 1;
+                # for i in range(1):
 
-                    # Only ask for input once at this stage
-                    if (numTimesToAsk > 1):
-                        break
+                #     # Only ask for input once at this stage
+                #     if (numTimesToAsk > 1):
+                #         break
 
-                    print("Enter Coordinates in Decimal Degrees:")
-                    latitudeDecimalDegrees1 = float(input("\tlatitudeDecimalDegrees1? "))
-                    longitudeDecimalDegrees1 = float(input("\tlongitudeDecimalDegrees1? "))
-                    latitudeDecimalDegrees2 = float(input("\tlatitudeDecimalDegrees2? "))
-                    longitudeDecimalDegrees2 = float(input("\tlongitudeDecimalDegrees2? "))
-                    distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                                              longitudeDecimalDegrees1,
-                                              latitudeDecimalDegrees2,
-                                              longitudeDecimalDegrees2)
-                    headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                                             longitudeDecimalDegrees1,
-                                             latitudeDecimalDegrees2,
-                                             longitudeDecimalDegrees2)
+                #     print("Enter Coordinates in Decimal Degrees:")
+                #     latitudeDecimalDegrees1 = float(input("\tlatitudeDecimalDegrees1? "))
+                #     longitudeDecimalDegrees1 = float(input("\tlongitudeDecimalDegrees1? "))
+                #     latitudeDecimalDegrees2 = float(input("\tlatitudeDecimalDegrees2? "))
+                #     longitudeDecimalDegrees2 = float(input("\tlongitudeDecimalDegrees2? "))
+                #     distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                #                               longitudeDecimalDegrees1,
+                #                               latitudeDecimalDegrees2,
+                #                               longitudeDecimalDegrees2)
+                #     headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
+                #                              longitudeDecimalDegrees1,
+                #                              latitudeDecimalDegrees2,
+                #                              longitudeDecimalDegrees2)
 
-                    print("Great-circle distance Point1 to Point2:",
-                          str(GPSdata['distanceP1P2']) + " km")
-                    print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                          str(GPSdata['headingP1P2']) + " deg")
-                    print()
-                    time.sleep(10)
+                #     print("Great-circle distance Point1 to Point2:",
+                #           str(GPSdata['distanceP1P2']) + " km")
+                #     print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                #           str(GPSdata['headingP1P2']) + " deg")
+                #     print()
+                #     time.sleep(10)
 
 
             # Send the data to the sdd1306 OLED display.  That is write

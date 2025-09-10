@@ -233,9 +233,7 @@ Firstly, my  rasberry pi  pico 2 w  is plugged into  the USB  port, no
 Bread Volt attached.  Note it is a pico 2 w not a pico w.
 
 Then I  started thonny, which does  a soft reboot of  the raspberry pi
-pico 2  w on  startup, and  so my code  worked.  However,  with thonny
-closed and  on a hard reboot(unplug  and replug in usb  cable) my code
-did not work.
+pico 2  w on  startup, and  so my code  worked. 
 
 So I  tried to  flash main.py  via thonny File->Save  As and  it hung.
 Consequently, I had  to execute the following commands  on the command
@@ -250,7 +248,7 @@ Firstly, you will need these:
 * cp mp_firmware_unofficial_latest.uf2 /media/.../RP2350/ ,to copy
   back mycropython
 * mpremote connect /dev/ttyACM0 fs ls ,should be empty
-* mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306 : ,to copy back
+* mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306.py : ,to copy back
   your main file
 * then your main.py is flashed to your pico
 * mpremote connect /dev/ttyACM0 fs ls  ,should show main.py and
