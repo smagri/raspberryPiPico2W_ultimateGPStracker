@@ -1,0 +1,16 @@
+15/9/2025
+
+As  per chatGPT  suggestions.  Used  inkscape  to create  a .svg  from
+paul's .jpg file.  But this just treats the whole image as one entity.
+That is  you can't  access individual  components in  fritzing.  Also,
+fritzing doesn't use .svg files it requires .ffz files.
+
+You would need to ask paul for his original fritzing file, that is the
+.fzz file, to start learning about modifying or creating .ffz fritzing
+files.
+
+.svg is a  vector graphics file containing information on  how to deal
+with images  and still  be able to  zoom in and  out with  the desired
+effect. However, every time you zoom the .svg file has to be converted
+for a bitmap on the screen.  It has to do this foreach rerender of the
+file when you zoom.
