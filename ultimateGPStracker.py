@@ -688,7 +688,7 @@ def displayOLED():
             if headingP1P2 is None:
                 display.text("Hp12p2:N/A", 0, 40)
             else:
-                display.text("Hp12p2:" + str(headingP1P2) + 'deg', 0, 48)
+                display.text("Hp12p2:" + str(headingP1P2) + 'deg', 0, 40)
 
         
     # visulise the display text on the OLED
@@ -1105,6 +1105,7 @@ def main():
             parseAndProcessGPSdata(NMEAmain)
             if GPSdata['fix'] == False:
                 print("Waiting for Fix . . .")
+                displayOLED()
             else:
                 # we have a fix
 
