@@ -617,18 +617,18 @@ def displayOLED():
     # hand corner of the display
 
     global latitudePoint1, longitudePoint1, latitudePoint2, longitudePoint2
-    global screenNum
+    global systemState
     
     display.fill(0) # blank it out
     if GPSdata['fix'] == False:
         # we don't have a fixed
         display.text("Wait for fix...", 0, 0)
-        #screenNum = 0
+        #systemState = 0
     else:
         # we have a fix
-        print("dbg: displayOLED: screenNum=", screenNum)
+        print("dbg: displayOLED: systemState=", systemState)
         # use modulus to switch between the screens
-        if screenNum%5 == 0: #no remainder
+        if systemState%5 == 0: #no remainder
             #display.text("ULTIMATE GPS: ", 0, 0)
             display.fill(0) # so one screen doesn't override the other
             display.text(GPSdata['date'][0:5] + ' ' + GPSdata['time'], 0, 0)
@@ -640,35 +640,40 @@ def displayOLED():
             #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
             display.text("TrueAlt:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
             display.text("GPSAlt:" + str(GPSdata['altitude']) + 'm', 0, 56)
-        elif screenNum%5 == 1:
+        elif systemState%5 == 1:
             # Goto next page as you have pressed the button1 once.
 
             # You only want to get the initial latitude and longitude
             # before you start moving.
             latitudePoint1 = GPSdata['latitudeDecimalDegrees']
             longitudePoint1 = GPSdata['longitudeDecimalDegrees']
-            screenNum = 2
-        elif screenNum%5 == 2: # remainder = 2
-            # We are at next page displaying data.
+            systemState = 2
+        elif systemState%5 == 2:
+            
+            # remainder = 2 and expands  to systemState = sytemState %
+            # 5 = 2 We are at next page displaying data.  When button1
+            # is pressed a second time its value will be three.
+            
             display.fill(0)
             display.text("p1Lat=" + str(latitudePoint1), 0, 0)
             display.text("p1Lon=" + str(longitudePoint1), 0, 8)
             display.text("Move to p2 ...", 0, 16)
             display.text("Press Button1 ...", 0, 24)
-        elif screenNum%5 == 3:
+        elif systemState%5 == 3:
             # Button1 pressed a second time once you have moved to point2.
             
-            # You don't want the point2 latitude and longatude to
-            # change once you have moved to point 2.
+            # You don't want the point2 latitude and longitude to
+            # change once you have moved to point 2, in case you start
+            # moving around after point2 is collected.
             latitudePoint2 = GPSdata['latitudeDecimalDegrees']
             longitudePoint2 = GPSdata['longitudeDecimalDegrees']
-            screenNum == 4
-        elif screenNum%5 == 4:
+            systemState = 4
+        elif systemState%5 == 4:
             #display.fill(0)
             display.text("p1Lat=" + str(latitudePoint1), 0, 0)
             display.text("p1Lon=" + str(longitudePoint1), 0, 8)
-            display.text("p2Lat=" + str(latitudePoint2), 0, 32)
-            display.text("p2Lon=" + str(longitudePoint2), 0, 40)
+            display.text("p2Lat=" + str(latitudePoint2), 0, 16)
+            display.text("p2Lon=" + str(longitudePoint2), 0, 24)
             distanceP1P2 = distanceBtw2PointsOnEarth(latitudePoint1,
                                                      longitudePoint1,
                                                      latitudePoint2,
@@ -678,12 +683,12 @@ def displayOLED():
                                                    longitudePoint1,
                                                    latitudePoint2,
                                                    longitudePoint2)
-            display.text("Dp12p2:" + str(distanceP1P2) + 'm', 0, 48)
+            display.text("Dp12p2:" + str(distanceP1P2) + 'm', 0, 32)
             
             if headingP1P2 is None:
-                display.text("Hp12p2:N/A", 0, 56)
+                display.text("Hp12p2:N/A", 0, 40)
             else:
-                display.text("Hp12p2:" + str(headingP1P2) + 'deg', 0, 56)
+                display.text("Hp12p2:" + str(headingP1P2) + 'deg', 0, 48)
 
         
     # visulise the display text on the OLED
@@ -832,7 +837,7 @@ def butOneIRQ(pin):
 
     global butOneUp,butOneDown
     global butOneOld #previous state of button
-    global screenNum
+    global systemState
     butOneValue = butOne.value() # member function of butOne object
     #print("butOneValue", butOneValue)
 
@@ -853,7 +858,7 @@ def butOneIRQ(pin):
         # This is atomic for simple assignments like booleans in
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
-        screenNum += 1
+        systemState += 1
         print('dbg: butOneIRQ: Button One Triggered')
     butOneOld=butOneValue
 
@@ -1086,8 +1091,8 @@ def main():
                   # the UART buffer
 
     #numTimesToAsk = 0
-    global screenNum
-    screenNum = 0
+    global systemState
+    systemState = 0
     try:
         while True:
             # You need to acquire the lock as readGPSdata() thread may be
@@ -1124,6 +1129,24 @@ def main():
                 print("GPS Ellipsoid Altitude:", str(GPSdata['altitude']) + " m")
                 #print("Mag VarDir", GPSdata['Mag VarDir'])
     
+                # Send the data to the sdd1306 OLED display.  That is write
+                # the contents of the FrameBuffer to display memory
+                displayOLED()
+
+                # displayOLED() calculates the point to point distance and heading
+                print("Great-circle distance Point1 to Point2:",
+                      str(GPSdata['distanceP1P2']) + " m")
+                #global headingP1P2
+                #heading = GPSdata.get('headingP1P2')
+                heading = GPSdata.get('headingP1P2')
+                #print("dbg: main: heading=", heading)
+                if heading is None:
+                    print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                          "N/A")
+                else:
+                    print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                          str(GPSdata['headingP1P2']) + " deg")
+
                 # Sydney
                 # latitudeDecimalDegrees1, longitudeDecimalDegrees1
                 # = -33.8688, 151.2093
@@ -1139,15 +1162,6 @@ def main():
                 # Melbourne
                 # latitudeDecimalDegrees2 = -37.8136
                 # longitudeDecimalDegrees2 = 144.9631
-
-                # TESTING, distance and heading from Melbourne to Sydney\
-                # Melbourne
-                # latitudeDecimalDegrees1 = -37.8136
-                # longitudeDecimalDegrees1 = 144.9631
-
-                # # Sydney
-                # latitudeDecimalDegrees2 = -33.8688
-                # longitudeDecimalDegrees2 = 151.2093
 
                 # Pauls property from end to gate:
                 # latitudeDecimalDegrees1? 0.478028
@@ -1179,26 +1193,6 @@ def main():
                 #                              longitudeDecimalDegrees2)
 
                 #time.sleep(10)
-
-
-            # Send the data to the sdd1306 OLED display.  That is write
-            # the contents of the FrameBuffer to display memory
-            displayOLED()
-
-            # displayOLED() calculates the point to point distance and heading
-            print("Great-circle distance Point1 to Point2:",
-                  str(GPSdata['distanceP1P2']) + " m")
-            #global headingP1P2
-            #heading = GPSdata.get('headingP1P2')
-            heading = GPSdata.get('headingP1P2')
-            #print("dbg: main: heading=", heading)
-            if heading is None:
-                print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                      "N/A")
-            else:
-                print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                      str(GPSdata['headingP1P2']) + " deg")
-
 
 
             print()

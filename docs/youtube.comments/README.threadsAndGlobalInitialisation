@@ -1,0 +1,25 @@
+REJECTED by youtube:
+Just a  followup and potential fix.  Not sure if this  is your problem
+but I was having a lot of  problems with my code starting up too, with
+globals  not  being set  in  time  as  the  thread forked  earlier  in
+micropython.   This is  a  known issue  with  micropython.  See  Issue
+#10621 and  issue #12698.   One workaround suggested  was to  put your
+main() code  into a function.   I have done  this and had  no problems
+since.  Go to  the micropython section of the  micropython github page
+and read up on these issues if you like. You may be interested in this
+too @paulmcwhorter.
+
+
+
+REJECTED by youtube.
+​ @paulmcwhorter  Just a followup and potential fix.  I was having a  lot of problems  with my code  starting up too, with  globals not being set  in time as  the thread forked earlier in micropython before global initialisation.   This is a known issue with  micropython.   See  Issue #10621  and  issue  #12698.  One  workaround                                                                                                suggested was  to put your main()  code into a function.   I have done this and had no problems since.   Go to the micropython section of the                                                                                                     micropython github page  and read up on these issues  if you like. You may be interested in this too @paulmcwhorter.
+
+
+
+ACCEPTED by youtube, I think it doesn't like the word github:
+​ @paulmcwhorter  Just a followup and potential fix.  I was having a  lot of problems  with my code  starting up too, with  globals not being set  in time as  the thread forked earlier in micropython before global initialisation.   This is a known issue with  micropython.   See  Issue #10621  and  issue  #12698.  One  workaround  suggested was  to put your main()  code into a function.   I have done this and had no problems since.
+
+
+Project11: ACCEPTED
+@marksholcomb   Just a  followup and potential fix.  Not sure if this  is your problem but I was having a lot of  problems with my code starting up too, with globals  not  being set  in  time  as  the  thread forked  earlier  in micropython.   This is  a  known issue  with  micropython.  See  Issue #10621 and  issue #12698.   One workaround suggested  was to  put your main() code  into a function.   I have done  this and had  no problems since.
+
