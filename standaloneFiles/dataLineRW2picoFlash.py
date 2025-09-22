@@ -1,12 +1,17 @@
-# This code writes three sensor readings as a comma-separated string to log.txt
-# on the Pico W, then reads the file back and splits the string into a list.
-# Purpose: Demonstrate basic file writing and reading in MicroPython using log.txt.
+# This code writes  three sensor readings as  a comma-separated string
+# to log.txt on  the Pico W, then  reads the file back  and splits the
+# string into  a list.   Purpose: Demonstrate  basic file  writing and
+# reading in MicroPython using log.txt.
 
-# Writing comma-delimited data to a file
-sensorData = "25.5,26.0,24.8"  # Example temperature readings from three sensors
+# Writing comma-delimited data to a file. Example sensor temperature
+# readings from three sensors
+sensorData = "25.5,26.0,24.8" 
 
-with open('log.txt', 'w') as file:  # Open log.txt in write mode ('w')
-    file.write(sensorData)  # Write the comma-separated string to the file
+# Get object/handle to the logfile, can be named anything. Open
+# log.txt in write mode ('w').
+with open('log.txt', 'w') as fileRWpicoFlash:
+    # Write the comma-separated string to the file
+    fileRWpicoFlash.write(sensorData)
 print("Data written to log.txt")  # Confirm data was written
 
 # Reading comma-delimited data
