@@ -250,8 +250,7 @@ Firstly, you will need these:
 * mpremote connect /dev/ttyACM0 fs ls ,should be empty
 * mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306.py : ,to copy back
   your main file
-* then your main.py is flashed to your pico
-* mpremote connect /dev/ttyACM0 fs ls  ,should show main.py and
+* then your main.py is flashed to your pico* mpremote connect /dev/ttyACM0 fs ls  ,should show main.py and
   ssd1306.py to be there.
 
 However, this still didn't solve my problem with a hard reboot running
@@ -301,3 +300,47 @@ In short:
 * .uf2 = a firmware update file format.
 * flash_nuke.uf2 = erases the chip.
 * mp_firmware_unofficial_latest.uf2 = installs MicroPython firmware.
+
+
+
+Running standalone files on the pico 2 w:
+-----------------------------------------
+
+Remove all files off the pico, probably just main.py at it seems to be
+special and runs itself regardless  what's in thonny or commandline as
+a standalone script.
+
+Delete via command line or via thonny.
+main.py
+ssd1306.py
+
+cp standalone.py (eg dataLineRW2picoFlash) to pico.
+
+Select standalone.py from the file view on the pico:
+import standalone - to run the script
+
+Note a double import doesn't work  till you get the micropython prompt
+back with  a soft  reboot, ie  Ctrl-D, in  thonny or  the commandline.
+
+Alternative to the soft reboot, as per chatGPT:
+
+>>> import sys
+>>> # remove from sys.modules if present
+>>> if 'dataLineRW2picoFlash' in sys.modules:
+...     del sys.modules['dataLineRW2picoFlash']
+...
+>>> # also remove the name from globals if present
+>>> try:
+...     del dataLineRW2picoFlash
+... except NameError:
+...     pass
+>>> # now import again (this will execute the file)
+>>> import dataLineRW2picoFlash
+
+
+In short(put it in a script, like rerunStandaloneFile, cut and past):
+
+import sys
+del sys.modules['dataLineRW2picoFlash']
+del dataLineRW2picoFlash
+import dataLineRW2PicoFlash

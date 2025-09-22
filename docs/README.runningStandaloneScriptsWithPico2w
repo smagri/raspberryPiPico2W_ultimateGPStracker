@@ -1,0 +1,50 @@
+22sep2025
+
+Remove all files off the pico, probably just main.py at it seems to be
+special and runs itself regardless  what's in thonny or commandline as
+a standalone script.
+
+Delete via command line or via thonny.
+main.py
+ssd1306.py
+
+cp standalone.py (eg dataLineRW2picoFlash) to pico.
+
+Select standalone.py from the file view on the pico:
+import standalone - to run the script
+
+Note a double import doesn't work  till you get the micropython prompt
+back with  a soft  reboot, ie  Ctrl-D, in  thonny or  the commandline.
+
+Alternative to the soft reboot, as per chatGPT:
+
+>>> import sys
+>>> # remove from sys.modules if present
+>>> if 'dataLineRW2picoFlash' in sys.modules:
+...     del sys.modules['dataLineRW2picoFlash']
+...
+>>> # also remove the name from globals if present
+>>> try:
+...     del dataLineRW2picoFlash
+... except NameError:
+...     pass
+>>> # now import again (this will execute the file)
+>>> import dataLineRW2picoFlash
+
+
+In short:
+
+import sys
+del sys.modules['dataLineRW2picoFlash']
+del dataLineRW2picoFlash
+import dataLineRW2PicoFlash
+
+------------------------------------------------------------------------------------
+chatGPT: - does not work
+Best practice: put runnable code in a function.
+
+Modify your script so top-level code is inside a function, then import
+once and call the function repeatedly:
+
+import dataLineRW2picoFlash
+dataLineRW2picoFlash.run() # run as many times as you want
