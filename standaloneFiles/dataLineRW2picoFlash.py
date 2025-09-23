@@ -7,17 +7,26 @@
 # readings from three sensors
 sensorData = "25.5,26.0,24.8" 
 
-# Get object/handle to the logfile, can be named anything. Open
-# log.txt in write mode ('w').
+# Get object/handle to the logfile, can be named anything,
+# fileRWpicoFlash, Open log.txt in write mode ('w').
 with open('log.txt', 'w') as fileRWpicoFlash:
     # Write the comma-separated string to the file
     fileRWpicoFlash.write(sensorData)
 print("Data written to log.txt")  # Confirm data was written
 
+
+
 # Reading comma-delimited data
-# with open('log.txt', 'r') as file:  # Open log.txt in read mode ('r')
-#     content = file.read()  # Read the entire file as a string
-#     print("Raw data:", content)  # Print the raw string
-#     # Parse into a list
-#     values = content.split(',')  # Split the string at commas to create a list
-#     print("Parsed values:", values)  # Print the resulting list
+
+# NOTE: mycropython can  use single quotes or doulbe  quotes but don't
+# mix  them.  with  open,  takes  care of  closing  the  file  at  the
+# appropriate time so you don't have to close them.
+
+with open('log.txt', 'r') as fileRWpicoFlash:  # Open log.txt in read mode ('r')
+    content = fileRWpicoFlash.read()  # Read the entire file as a string
+    print("Raw data:", content)  # Print the raw string
+    # Parse into a list/array
+
+    # Split the string at commas to create a list/array of strings.
+    values = content.split(',')
+    print("Parsed data:", values)  # Print the resulting list

@@ -344,3 +344,16 @@ import sys
 del sys.modules['dataLineRW2picoFlash']
 del dataLineRW2picoFlash
 import dataLineRW2PicoFlash
+
+
+NOTE: this is  a valid namespace getter in mycropython,  may be useful
+sometimes but  a Ctrl-D soft reboot  in thonny is the  easiet thing to
+do, then do a run of the script on the pico:
+
+>>> from dataLineRW2PicoFlash import *
+Data written to log.txt
+Raw data: 25.5,26.0,24.8
+Parsed data: ['25.5', '26.0', '24.8']
+>>> float(values[1])
+26.0
+>>> 
