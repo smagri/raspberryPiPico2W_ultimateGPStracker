@@ -343,7 +343,7 @@ In short(put it in a script, like rerunStandaloneFile, cut and past):
 import sys
 del sys.modules['dataLineRW2picoFlash']
 del dataLineRW2picoFlash
-import dataLineRW2PicoFlash
+import dataLineRW2picoFlash
 
 
 NOTE: this is  a valid namespace getter in mycropython,  may be useful
