@@ -25,14 +25,14 @@ time.sleep(1)
 # response:
 
 # Send bytes,  b, to  the pico,  open the  log file  on the  pico with
-# handle filePicoHandle.  with keyword  handled opening an closing the
-# file  in our  last  lession  but here  because  we  are running  two
+# handle filePicoHandle.   'with' keyword  handled opening  an closing
+# the file  in our last  lession but here  because we are  running two
 # machines, the  pico and the PC.   CR and LF are  required instead of
-# doing it  manually.
+# doing it manually.
 serialObj.write(b"filePicoHandle=open('logOnPico.txt','r')\r\n")
 
-# After the  pico recived the  write() command it returns  the command
-# back to the PC, so we can  read it in.
+# After  the pico  recived the  write() command  it returns/echos  the
+# command back to the PC, so we can read it in.
 
 # .strip() removes and leading and trailing whitespace charcters from
 # the string.
@@ -40,9 +40,6 @@ picoCmdResultLine =serialObj.readline().decode('utf-8').strip()
 print(picoCmdResultLine)
 time.sleep(1)
 
-
-
-# ------------------------------------------------------------------------------
 # Reading from logfile logPico.txt on the pico to logPC.txt on the PC:
 
 # PC logfile opened if filePChandle handle
@@ -59,22 +56,26 @@ with open('logOnPC.txt','w') as filePChandle:
 
         # Read the echo of the readline() command
         echoLine = serialObj.readline().decode('utf-8').strip()
-        print("Echo Line: ", echoLine)
+        #time.sleep(0.01)
+        #print("Echo Line: ", echoLine)
         # Read the lines of the logPico.txt logfile
         picoCmdResultLine =serialObj.readline().decode('utf-8').strip()
-        print("File line: ", picoCmdResultLine)
-
+        #print("File line: ", picoCmdResultLine)
+        
         
         # Write what is  in the logOnPico.txt logfile into  the logfile on
         # the PC, logOnPC.txt
-        #if picoCmdResultLine.startswith("'") and picoCmdResultLine != "''":
+        if picoCmdResultLine.startswith("'") and picoCmdResultLine != "''":
             # Write lines starting with ' but not the blank line ''
-    
-#         line =serialObj.readline().decode('utf-8').strip()
-#         print("LINE: ",line)
-#         if line.startswith("'") and line !="''":
-#             line = line[1:-3]
-#             file.write(line+'\n')
+            
+            #         line =serialObj.readline().decode('utf-8').strip()
+     #         print("LINE: ",line)
+     #         if line.startswith("'") and line !="''":
+            # pick char 1 and remove last three
+            picoCmdResultLine = picoCmdResultLine[1:-3]
+            # newline to have each line under the other instead of side by side
+            print("Pico File Line read in is=", picoCmdResultLine)
+            filePChandle.write(picoCmdResultLine + '\n')
 
 # close the log file on the pico
 serialObj.write(b"filePicoHandle.close()\r\n")
