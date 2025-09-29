@@ -696,7 +696,19 @@ def displayOLED():
 
            
 
+def displayOLEDlogging():
 
+    global logging
+    
+    display.fill(0)
+    display.text("Logging", 0, 0)
+    display.text("Lat, Long...", 0, 8)
+    display.text("Press Button2 ", 0, 16)
+    display.text("to turn OFF.", 0, 24)
+    display.show()
+    
+
+        
 def is_leap_year(year):
     # Leap year rule: divisible by 4, but centuries must be divisible by 400
     # This matches the exact Gregorian calendar rule.
@@ -859,7 +871,7 @@ def butOneIRQ(pin):
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
         systemState += 1
-        print('dbg: butOneIRQ: Button One Triggered')
+        #print('dbg: butOneIRQ: Button One Triggered')
     butOneOld=butOneValue
 
     
@@ -870,7 +882,7 @@ def button2irq(pin):
     global button2old # previous state of button
     global logging
     button2value = button2.value() # member function of button2 object
-    print("dbg: button2irq: button2value=", button2value)
+    #print("dbg: button2irq: button2value=", button2value)
 
     # deboundcing the switch
     #
@@ -890,8 +902,8 @@ def button2irq(pin):
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
         logging = not logging
-        print('dbg: button2irq: Button Two Triggered')
-        print("dbg: logging=", logging)
+        #print('dbg: button2irq: Button Two Triggered')
+        #print("dbg: logging=", logging)
     button2old=button2value
    
 
@@ -1114,6 +1126,8 @@ def main():
     #numTimesToAsk = 0
     global systemState
     systemState = 0
+
+
     try:
         while True:
             # You need to acquire the lock as readGPSdata() thread may be
@@ -1128,46 +1142,58 @@ def main():
                 print("Waiting for Fix . . .")
                 displayOLED()
             else:
-                # we have a fix
 
-                # NOTE, the  more sattilites we  get for our fix  the more
-                # accurate the  position, ie latitude and  longitude.  You
-                # can verify this on google earth or openstreetmap.
+                if not logging:
+                    # we have a fix
 
-                print("We have a satellite fix, Ultimate GPS Tracker Report: ")
-                print("Time:", GPSdata['time'])
-                print("Date:", GPSdata['date'])
-                print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
+                    # NOTE, the  more sattilites we  get for our fix  the more
+                    # accurate the  position, ie latitude and  longitude.  You
+                    # can verify this on google earth or openstreetmap.
 
-                # we extract latitude and longitude in the format of
-                # openstreetmap and google earth
-                print("Latitude and Longitude: ",
-                GPSdata['latitudeDecimalDegrees'],
-                GPSdata['longitudeDecimalDegrees'])
+                    print("We have a satellite fix, Ultimate GPS Tracker Report: ")
+                    print("Time:", GPSdata['time'])
+                    print("Date:", GPSdata['date'])
+                    print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
 
-                print("Knots: ", str(GPSdata['knots']) + " km/h")
-                print("Heading: ", str(GPSdata['heading']) + " deg")
-                print("Geoid True Altitude:", str(GPSdata['trueAltitude']) + " m")
-                print("GPS Ellipsoid Altitude:", str(GPSdata['altitude']) + " m")
-                #print("Mag VarDir", GPSdata['Mag VarDir'])
-    
-                # Send the data to the sdd1306 OLED display.  That is write
-                # the contents of the FrameBuffer to display memory
-                displayOLED()
+                    # we extract latitude and longitude in the format of
+                    # openstreetmap and google earth
+                    print("Latitude and Longitude: ",
+                    GPSdata['latitudeDecimalDegrees'],
+                    GPSdata['longitudeDecimalDegrees'])
 
-                # displayOLED() calculates the point to point distance and heading
-                print("Great-circle distance Point1 to Point2:",
-                      str(GPSdata['distanceP1P2']) + " m")
-                #global headingP1P2
-                #heading = GPSdata.get('headingP1P2')
-                heading = GPSdata.get('headingP1P2')
-                #print("dbg: main: heading=", heading)
-                if heading is None:
-                    print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                          "N/A")
+                    print("Knots: ", str(GPSdata['knots']) + " km/h")
+                    print("Heading: ", str(GPSdata['heading']) + " deg")
+                    print("Geoid True Altitude:", str(GPSdata['trueAltitude']) + " m")
+                    print("GPS Ellipsoid Altitude:", str(GPSdata['altitude']) + " m")
+                    #print("Mag VarDir", GPSdata['Mag VarDir'])
+
+                    # Send the data to the sdd1306 OLED display.  That is write
+                    # the contents of the FrameBuffer to display memory
+                    displayOLED()
+
+
+                    # displayOLED() calculates the point to point distance and heading
+                    print("Great-circle distance Point1 to Point2:",
+                          str(GPSdata['distanceP1P2']) + " m")
+                    #global headingP1P2
+                    #heading = GPSdata.get('headingP1P2')
+                    heading = GPSdata.get('headingP1P2')
+                    #print("dbg: main: heading=", heading)
+                    if heading is None:
+                        print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                              "N/A")
+                    else:
+                        print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                              str(GPSdata['headingP1P2']) + " deg")
                 else:
-                    print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                          str(GPSdata['headingP1P2']) + " deg")
+                    # button2 has been pressed to start logging
+                    displayOLEDlogging()
+                    # only makes sence to go back to first screen
+                    # after a logging episode
+                    systemState = 0
+                    print("On Pico, LOGGING Latitude & Longitude to"
+                          " ultimateGPStracker.log ")
+                    
 
 
             print()
