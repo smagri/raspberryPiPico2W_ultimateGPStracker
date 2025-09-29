@@ -31,3 +31,7 @@ mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306.py :
 * then your main.py is flashed to your pico
 * mpremote connect /dev/ttyACM0 fs ls  ,should show main.py and
   ssd1306.py to be there.
+
+To delete files from the raspberrypi pico 2 w:
+---------------------------------------------
+mpremote connect /dev/ttyACM0 fs rm :ultimateGPStracker.py

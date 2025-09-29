@@ -841,7 +841,7 @@ def butOneIRQ(pin):
     butOneValue = butOne.value() # member function of butOne object
     #print("butOneValue", butOneValue)
 
-    # denouncing the switch
+    # debouncing the switch
     #
     if butOneValue==0:
         butOneDown = time.ticks_ms() # time when button pressed down
@@ -864,34 +864,35 @@ def butOneIRQ(pin):
 
     
 
-# def button2IRQ(pin):
+def button2irq(pin):
 
-#     global button2Up,button2Down
-#     global button2Old #previous state of button
-#     global screenOne
-#     button2Value = button2.value() # member function of button2 object
-#     #print("button2Value", button2Value)
+    global button2up, button2down
+    global button2old # previous state of button
+    global logging
+    button2value = button2.value() # member function of button2 object
+    print("dbg: button2irq: button2value=", button2value)
 
-#     # denouncing the switch
-#     #
-#     if button2Value==0:
-#         button2Down = time.ticks_ms() # time when button pressed down
-#     else:
-#         button2Value==1
-#         button2Up = time.ticks_ms() # time when button goes back up
+    # deboundcing the switch
+    #
+    if button2value==0:
+        button2down = time.ticks_ms() # time when button pressed down
+    else:
+        button2value==1
+        button2up = time.ticks_ms() # time when button goes back up
 
-#     # If in the last loop the button was in the up state and is now
-#     # pressed down in this loop, with a 50ms hysteresis(for switch
-#     # debounce noise, eg may get multiple 0's before you get a 1 and
-#     # visa versa).  Also, obviously button is pressed down after it was
-#     # in the up state last so button2Down-button2Up is a +ve value.
-#     if (button2Old==1) and (button2Value==0) and ((button2Down-button2Up) > 50):
-#         # This is atomic for simple assignments like booleans in
-#         # mycropython.  Counters, lists, dicts, multi-step operations:
-#         # use disable_irq() or carefully designed atomic methods.
-#         screenOne = not screenOne
-#         print('Button Two Triggered')
-#     button2Old=button2Value
+    # If in the last loop the button was in the up state and is now
+    # pressed down in this loop, with a 50ms hysteresis(for switch
+    # debounce noise, eg may get multiple 0's before you get a 1 and
+    # visa versa).  Also, obviously button is pressed down after it was
+    # in the up state last so button2Down-button2Up is a +ve value.
+    if (button2old==1) and (button2value==0) and ((button2down-button2up) > 50):
+        # This is atomic for simple assignments like booleans in
+        # mycropython.  Counters, lists, dicts, multi-step operations:
+        # use disable_irq() or carefully designed atomic methods.
+        logging = not logging
+        print('dbg: button2irq: Button Two Triggered')
+        print("dbg: logging=", logging)
+    button2old=button2value
    
 
 
@@ -1083,7 +1084,27 @@ def main():
     butOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = butOneIRQ)
 
 
-    # Setup IRQ on yellow button press to goto next page on ssd1302 OLED
+    # Setup IRQ on green button press to start/stop logging latitude
+    # and logitude
+    
+    global button2pin # button 2 is connected to GPIO pin 11
+    button2pin = 11 # button 2 is connected to GPIO pin 11
+    global button2
+    button2 = Pin(button2pin, Pin.IN, Pin.PULL_UP)# object on GPIO pin 11
+    global button2up
+    button2up = 0 # button goes down to up
+    global button2down
+    button2down = 0# button goes up to down
+    global button2old
+    button2old = 1 # last time through the loop the buttion was up
+    global logging # start logging=True, or stop logging=False
+    logging = False
+    
+ 
+    # button going from 1 to 0, call interrupt routine called butOneIRQ
+    # OR
+    # button going from 0 to 1, cal interrupt routine called butOneIRQ
+    button2.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = button2irq)
 
     # launch the reading data thread readGPSdata()
     _thread.start_new_thread(readGPSdata,())
@@ -1147,53 +1168,6 @@ def main():
                 else:
                     print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
                           str(GPSdata['headingP1P2']) + " deg")
-
-                # Sydney
-                # latitudeDecimalDegrees1, longitudeDecimalDegrees1
-                # = -33.8688, 151.2093
-                # Melbourne
-                # latitudeDecimalDegrees2, lonitudeDecimalDegrees2
-                #= -37.8136, 144.9631  # Melbourne
-
-                # TESTING, distance and heading from Sydney and Melbourne
-                # Sydney
-                # latitudeDecimalDegrees1 = -33.8688
-                # longitudeDecimalDegrees1 = 151.2093
-
-                # Melbourne
-                # latitudeDecimalDegrees2 = -37.8136
-                # longitudeDecimalDegrees2 = 144.9631
-
-                # Pauls property from end to gate:
-                # latitudeDecimalDegrees1? 0.478028
-                # longitudeDecimalDegrees1? 33.163614
-                # latitudeDecimalDegrees2? 0.479399
-                # longitudeDecimalDegrees2? 33.165501
-                # Great-circle distance Point1 to Point2: 0.26 km
-                # Heading/Bearing (Longitude Degrees from North) Point1 to Point2: 54.07 deg
-
-                # numTimesToAsk += 1;
-                # for i in range(1):
-
-                #     # Only ask for input once at this stage
-                #     if (numTimesToAsk > 1):
-                #         break
-
-                #     print("Enter Coordinates in Decimal Degrees:")
-                #     latitudeDecimalDegrees1 = float(input("\tlatitudeDecimalDegrees1? "))
-                #     longitudeDecimalDegrees1 = float(input("\tlongitudeDecimalDegrees1? "))
-                #     latitudeDecimalDegrees2 = float(input("\tlatitudeDecimalDegrees2? "))
-                #     longitudeDecimalDegrees2 = float(input("\tlongitudeDecimalDegrees2? "))
-                #     distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                #                               longitudeDecimalDegrees1,
-                #                               latitudeDecimalDegrees2,
-                #                               longitudeDecimalDegrees2)
-                #     headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                #                              longitudeDecimalDegrees1,
-                #                              latitudeDecimalDegrees2,
-                #                              longitudeDecimalDegrees2)
-
-                #time.sleep(10)
 
 
             print()
