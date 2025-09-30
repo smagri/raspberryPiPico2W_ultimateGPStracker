@@ -88,7 +88,7 @@ def logging2pico():
         # existing file or create it if it doesn't exist.  Using the
         # 'with' keyword lets the system handle when the file should
         # be closed.
-        with open('ultimateGPStracker.txt', 'a') as fileApicoFlash:  
+        with open('ultimateGPStracker.log', 'a') as fileApicoFlash:  
 
             # Remember that  readGPSdata() thread runs to  get the raw
             # NMEA  sentences  into NMEAdata/NMEAmain  map/dictionary.
@@ -112,10 +112,10 @@ def logging2pico():
         # scope.  The file is closed even if an exception occurs.
             
         # Confirm data was appended
-        print("Appended new readings to ultimateGPStracker.txt")  
+        print("Appended new readings to ultimateGPStracker.log")  
     except OSError as e:
         # Handle errors like full flash
-        print("Error appending to ultimateGPStracker.txt:", e)
+        print("Error appending to ultimateGPStracker.log:", e)
 
 
 
