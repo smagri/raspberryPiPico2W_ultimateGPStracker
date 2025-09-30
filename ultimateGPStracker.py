@@ -73,8 +73,51 @@ import _thread
 from ssd1306 import SSD1306_I2C
 import math
 import sys
+import os  # Import os module for file system operations
 
 #time.sleep(10)
+def logging2pico():
+
+    # Logs  latitude and  longitude  values as  comma seperated  list.
+    # Each  pair of  values  on  seperate lines  into  a  file on  the
+    # raspberry pi pico w.
+
+
+    try:
+        # Open logfile in append mode ('a').  This will append to an
+        # existing file or create it if it doesn't exist.  Using the
+        # 'with' keyword lets the system handle when the file should
+        # be closed.
+        with open('ultimateGPStracker.txt', 'a') as fileApicoFlash:  
+
+            # Remember that  readGPSdata() thread runs to  get the raw
+            # NMEA  sentences  into NMEAdata/NMEAmain  map/dictionary.
+            # Then  parseAndProcessGPSdata()   populates  the  GPSdata
+            # map/dictionary. GPSdata dictionary is global. 
+            
+            # Get the current latitude and longatude values.
+            curLatitude = GPSdata['latitudeDecimalDegrees']
+            curLongitude = GPSdata['longitudeDecimalDegrees']
+
+            # Construct a CSV line string of current latitude and
+            # longitude values.
+            appendLineCSVstrLine = str(curLatitude) + "," + str(curLongitude)
+
+            # fileApicoFlash.write() requires a string like "30.1,29.8,31.0"
+            # Append the line with a newline
+            fileApicoFlash.write(appendLineCSVstrLine + '\n')
+            #print("dbg: logging2pico: Appended Line is=", appendLineCSVstrLine)
+
+        # 'with' keyword closes  the file now as it's block  is out of
+        # scope.  The file is closed even if an exception occurs.
+            
+        # Confirm data was appended
+        print("Appended new readings to ultimateGPStracker.txt")  
+    except OSError as e:
+        # Handle errors like full flash
+        print("Error appending to ultimateGPStracker.txt:", e)
+
+
 
 def radians2degrees(radians):
 
@@ -322,11 +365,13 @@ def yield_thread():
     time.sleep_ms(0)
     # hakky way to do this is: time.sleep(10)
 
+
+# start: readGPSdata() thread ##################################################
+
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to
 # loose data while processing it.
 
-# start: readGPSdata() thread ##################################################
 def readGPSdata():
     # hacky time.sleep(10) as this also yeilds the thread
 
@@ -1137,14 +1182,17 @@ def main():
             NMEAmain = NMEAdata.copy()
             dataLock.release()
             #print(NMEAmain['GPGGA'])
+
+            #
             parseAndProcessGPSdata(NMEAmain)
+            
             if GPSdata['fix'] == False:
                 print("Waiting for Fix . . .")
                 displayOLED()
             else:
+                # we have a fix
 
                 if not logging:
-                    # we have a fix
 
                     # NOTE, the  more sattilites we  get for our fix  the more
                     # accurate the  position, ie latitude and  longitude.  You
@@ -1185,14 +1233,18 @@ def main():
                     else:
                         print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
                               str(GPSdata['headingP1P2']) + " deg")
+                        #heading = None
                 else:
                     # button2 has been pressed to start logging
+                    
                     displayOLEDlogging()
                     # only makes sence to go back to first screen
                     # after a logging episode
                     systemState = 0
                     print("On Pico, LOGGING Latitude & Longitude to"
                           " ultimateGPStracker.log ")
+                    logging2pico()
+                    
                     
 
 
