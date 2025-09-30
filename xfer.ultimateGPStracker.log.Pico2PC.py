@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Python command line program to xfer logfiles/files flashed to the
 # Pico W to PC.
 
@@ -29,6 +27,11 @@ time.sleep(1)
 # the file  in our last  lession but here  because we are  running two
 # machines, the  pico and the PC.   CR and LF are  required instead of
 # doing it manually.
+
+# b"" → convert a string literal into bytes.
+
+# serial.write() can only send bytes, so the b is necessary for
+# sending commands to the Pico.
 serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
 
 # After  the pico  recived the  write() command  it returns/echos  the
@@ -37,13 +40,13 @@ serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
 # .strip() removes and leading and trailing whitespace charcters from
 # the string.
 picoCmdResultLine =serialObj.readline().decode('utf-8').strip()
-print(picoCmdResultLine)
+#print(picoCmdResultLine)
 time.sleep(1)
 
-# Reading from logfile logPico.txt on the pico to logPC.txt on the PC:
+# Reading from  logfile on the pico  to logfile on the PC:
 
 # PC logfile opened if filePChandle handle
-with open('logOnPC.txt','w') as filePChandle:
+with open('ultimateGPStracker.logOnPC.log','w') as filePChandle:
 
     # Read all the lines of the pico logfile till there are no lines.
     # That is EOL/EOF is an empty STRING(hence, double quotes).
@@ -57,24 +60,23 @@ with open('logOnPC.txt','w') as filePChandle:
         # Read the echo of the readline() command
         echoLine = serialObj.readline().decode('utf-8').strip()
         #time.sleep(0.01)
-        #print("Echo Line: ", echoLine)
+        print("dbg: Echo Line: ", echoLine)
         # Read the lines of the logPico.txt logfile
         picoCmdResultLine =serialObj.readline().decode('utf-8').strip()
-        #print("File line: ", picoCmdResultLine)
+        print("dbg: File line: ", picoCmdResultLine)
         
         
-        # Write what is  in the logOnPico.txt logfile into  the logfile on
-        # the PC, logOnPC.txt
+        # Write what is in the pico logfile into the logfile on the
+        # PC.
         if picoCmdResultLine.startswith("'") and picoCmdResultLine != "''":
             # Write lines starting with ' but not the blank line ''
-            
-            #         line =serialObj.readline().decode('utf-8').strip()
-     #         print("LINE: ",line)
-     #         if line.startswith("'") and line !="''":
-            # pick char 1 and remove last three
+
+            # Pick char string and remove last three and start string
+            # from 1 not 0
             picoCmdResultLine = picoCmdResultLine[1:-3]
             # newline to have each line under the other instead of side by side
-            print("Pico File Line read in is=", picoCmdResultLine)
+            print("dbg: Pico File Line read in is=",
+                  picoCmdResultLine)
             filePChandle.write(picoCmdResultLine + '\n')
 
 # close the log file on the pico
