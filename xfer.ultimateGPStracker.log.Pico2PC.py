@@ -7,9 +7,13 @@ import time
 serialPort= "/dev/ttyACM0"
 baudRate = 115200 # for the pico it dosen't seem you can change this baudRate
 
+# Open serial port connection to the pico.
+
 # If this script doesn't get a response from the pico within 5 seconds
 # it times out  and continues with the program,  hence timout=5.  Here
-# serialObj is the handle for our serial port.
+# serialObj  is  the  handle  for  our  serial  port.   For  instance,
+# readline() operation  will wait  at most 5  seconds for  data before
+# giving up.
 serialObj = serial.Serial(serialPort, baudRate, timeout=5)
 # To give the UART/hardware and python script time to connect to each
 # other.
@@ -28,55 +32,86 @@ time.sleep(1)
 # machines, the  pico and the PC.   CR and LF are  required instead of
 # doing it manually.
 
-# b"" → convert a string literal into bytes.
+# \r\n are  required by  MicoPython REPL  on the  pico. \r  is carrige
+# return and  \n is linfeed/newline.   So together \r\n is  a standard
+# EOL sequence used in many communication protocols, especially serial
+# terminals.
 
-# serial.write() can only send bytes, so the b is necessary for
-# sending commands to the Pico.
+# The MicroPython REPL(mycropython running on the pico essentially) is
+# the interactive prompt that lets you talk directly to a board (like
+# the Raspberry Pi Pico or ESP32) running MicroPython. >>> is the REPL
+# prompt, waiting for your python code.
+
+# REPL stands for Read–Eval–Print Loop:
+# Read → It reads what you type in (a Python command).
+# Eval → It evaluates (executes) that command on the microcontroller.
+# Print → It prints the result back to you.
+#Loop → Then it waits for the next command.
+
+# .write()  method expects  raw bytes  to send  over the  serial port.
+# Computers  and microcontrollers  communicate  via  bytes not  python
+# string objects.
 serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
 
 # After  the pico  recived the  write() command  it returns/echos  the
 # command back to the PC, so we can read it in.
 
+#.decode('utf-8') converts the bytes receive from serial into a string.
+# So, Latitude,Longitude becomes "Latitude,Longitude"???
+
 # .strip() removes and leading and trailing whitespace charcters from
-# the string.
-picoCmdResultLine =serialObj.readline().decode('utf-8').strip()
+# the string, including \r\n
+picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
 #print(picoCmdResultLine)
 time.sleep(1)
 
-# Reading from  logfile on the pico  to logfile on the PC:
+# Reading from logfile logfile on the pico to logfile on the PC:
 
-# PC logfile opened if filePChandle handle
-with open('ultimateGPStracker.logOnPC.log','w') as filePChandle:
+# PC logfile opened and filePChandle is the program handle to it.
+with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
 
     # Read all the lines of the pico logfile till there are no lines.
-    # That is EOL/EOF is an empty STRING(hence, double quotes).
+    # That is EOF is an empty STRING(hence, double quotes).
     while picoCmdResultLine != "''":
 
-        # Write   a   line   to   the    pico   which   echos   the   sent
-        # command(readline())to the  PC and actually executes  the command
-        # on the pico.
+        # Write   a  line   to   the  pico   which   echos  the   sent
+        # command(readline())to  the  PC  and  actually  executes  the
+        # command on the  pico.  The command is to read  the next line
+        # in the logfile.
         serialObj.write(b"filePicoHandle.readline()\r\n")
 
-        # Read the echo of the readline() command
+        # Read the echo of the readline() command.
+
+        #.decode('utf-8') converts the bytes received from serial port
+        # into    a    string.    So,    Latitude,Longitude    becomes
+        # "Latitude,Longitude"???
+
+        # .strip() removes and leading and trailing whitespace charcters from
+        # the string, including \r\n
         echoLine = serialObj.readline().decode('utf-8').strip()
         #time.sleep(0.01)
-        print("dbg: Echo Line: ", echoLine)
-        # Read the lines of the logPico.txt logfile
-        picoCmdResultLine =serialObj.readline().decode('utf-8').strip()
-        print("dbg: File line: ", picoCmdResultLine)
+        #print("Echo Line: ", echoLine)
+        # Read the lines of the pico logfile
+        picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
+        #print("File line: ", picoCmdResultLine)
         
         
-        # Write what is in the pico logfile into the logfile on the
-        # PC.
+        # Write what is  in the logfile on the pico into  the logfile on
+        # the PC.
         if picoCmdResultLine.startswith("'") and picoCmdResultLine != "''":
             # Write lines starting with ' but not the blank line ''
-
-            # Pick char string and remove last three and start string
-            # from 1 not 0
+            
+            # The  Pico   sends  lines   as  string   literals,  e.g.,
+            # '-33.77654,150.9693\n'.   The  code  removes  the  extra
+            # quotes and  newline: [1:-3] → starts  from 2nd character
+            # to 3rd-from-last  (removes leading ' and  trailing \n').
+            # Writes the  cleaned line  to the PC  log file,  adding a
+            # newline for proper formatting.
+            #
+            # This removes the \, n, ' ie three characters.
             picoCmdResultLine = picoCmdResultLine[1:-3]
             # newline to have each line under the other instead of side by side
-            print("dbg: Pico File Line read in is=",
-                  picoCmdResultLine)
+            #print("Pico File Line read in is=", picoCmdResultLine)
             filePChandle.write(picoCmdResultLine + '\n')
 
 # close the log file on the pico

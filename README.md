@@ -357,3 +357,15 @@ Parsed data: ['25.5', '26.0', '24.8']
 >>> float(values[1])
 26.0
 >>> 
+
+
+Python command line program to xfer logfiles/files flashed to the
+-----------------------------------------------------------------
+Pico W to PC.
+-------------
+
+Once the logfile has been created on the pico, ultimateGPStracker.log.
+To      read      this      logfile       to      the      PC      use
+xfer.ultimateGPStracker.log.Pico2PC.py.   However,  somtimes you  will
+get blank  lines in your PC  logfile, ultimateGPStracker.log.OnPC.log.
+I'm not sure why this is so yet, needs further investigation.

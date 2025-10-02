@@ -1,0 +1,22 @@
+>>> %Run xfer.ultimateGPStracker.log.Pico2PC.py
+dbg: Echo Line:  >>> filePicoHandle.readline()
+dbg: File line:  '-33.77654,150.9693\n'
+dbg: Pico File Line read in is= -33.77654,150.9693
+dbg: Echo Line:  >>> filePicoHandle.readline()
+dbg: File line:  '-33.77654,150.9693\n'
+dbg: Pico File Line read in is= -33.77654,150.9693
+dbg: Echo Line:  >>> filePicoHandle.readline()
+dbg: File line:  '-33.77654,150.9693\n'
+dbg: Pico File Line read in is= -33.77654,150.9693
+dbg: Echo Line:  >>> filePicoHandle.readline()
+dbg: File line:  '-33.77654,150.9693\n'
+dbg: Pico File Line read in is= -33.77654,150.9693
+dbg: Echo Line:  >>> filePicoHandle.readline()
+dbg: File line:  '-33.77654,150.9693\n'
+dbg: Pico File Line read in is= -33.77654,150.9693
+dbg: Echo Line:  >>> filePicoHandle.readline()
+dbg: File line:  '-33.77654,150.9693\n'
+dbg: Pico File Line read in is= -33.77654,150.9693
+dbg: Echo Line:  >>> filePicoHandle.readline()
+dbg: File line:  ''
+>>> 
