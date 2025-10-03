@@ -67,7 +67,7 @@
 # Since pico is a 3.3V device 3.3V needs to be used to power I2C
 # devices.
 
-from machine import Pin, I2C, UART
+from machine import Pin, I2C, UART, reset
 import time
 import _thread
 from ssd1306 import SSD1306_I2C
@@ -75,13 +75,21 @@ import math
 import sys
 import os  # Import os module for file system operations
 
+
 #time.sleep(10)
 def logging2pico():
 
-    # Logs  latitude and  longitude  values as  comma seperated  list.
-    # Each  pair of  values  on  seperate lines  into  a  file on  the
-    # raspberry pi pico w.
+    # Logs latitude  and longitude values  as comma seperated  list on
+    # seperate lines into a logfile on the raspberry pi pico w.
 
+    # Note:  you  may be  concerned  about  the open/close  each  time
+    # logging2pico() is called but really the overhead in this program
+    # is running  python so it's no  big deal and probably  better for
+    # program simplicity.
+
+    # Note: the pico  has 2MB flash, 1MB for the  firmware and 1MB for
+    # were you can store data.  So  be cognisant of how often you want
+    # to log.
 
     try:
         # Open logfile in append mode ('a').  This will append to an
@@ -106,6 +114,15 @@ def logging2pico():
             # fileApicoFlash.write() requires a string like "30.1,29.8,31.0"
             # Append the line with a newline
             fileApicoFlash.write(appendLineCSVstrLine + '\n')
+
+            # paul here  adds: It forces  python to write its  data in
+            # the RAM buffer to the  file.  Though 'with' block out of
+            # scope should do this anyway  but if your program crashes
+            # or the  pico resets  before the  with block  closes that
+            # last line might never make it to the flash.
+            fileApicoFlash.flush()
+            time.sleep(0.1)  # sleep 0.1 seconds, 10th of a second, 100ms
+            
             #print("dbg: logging2pico: Appended Line is=", appendLineCSVstrLine)
 
         # 'with' keyword closes  the file now as it's block  is out of
@@ -116,6 +133,8 @@ def logging2pico():
     except OSError as e:
         # Handle errors like full flash
         print("Error appending to ultimateGPStracker.log:", e)
+
+    return curLatitude, curLongitude
 
 
 
@@ -741,15 +760,16 @@ def displayOLED():
 
            
 
-def displayOLEDlogging():
+def displayOLEDlogging(curLatitude, curLongitude):
 
     global logging
     
     display.fill(0)
-    display.text("Logging", 0, 0)
-    display.text("Lat, Long...", 0, 8)
-    display.text("Press Button2 ", 0, 16)
-    display.text("to turn OFF.", 0, 24)
+    display.text("Logging...", 0, 0)
+    display.text("Lat:" + str(curLatitude), 0, 8)
+    display.text("Long:" + str(curLongitude), 0, 16)
+    display.text("Press Button2 ", 0, 24)
+    display.text("to turn OFF.", 0, 32)
     display.show()
     
 
@@ -1236,14 +1256,17 @@ def main():
                         #heading = None
                 else:
                     # button2 has been pressed to start logging
-                    
-                    displayOLEDlogging()
-                    # only makes sence to go back to first screen
-                    # after a logging episode
-                    systemState = 0
+
+                    latitudeCur, longitudeCur = logging2pico()
+
+                    displayOLEDlogging(latitudeCur, longitudeCur)
+
                     print("On Pico, LOGGING Latitude & Longitude to"
                           " ultimateGPStracker.log ")
-                    logging2pico()
+
+                    # only makes sence to go back to first screen
+                    # after you have finished logging data
+                    systemState = 0                    
                     
                     
 
@@ -1267,7 +1290,8 @@ def main():
                               # keyboardinterrupt may be just a ctrl-C
 
         keepRunning = False # kill main thread 
-
+        time.sleep(1)
+        
         print("\nStopping Program . . . Cleaning Up UART")
         # we don't know why sleeps don't work here but do in paul's code
         #    time.sleep(1) # short pause to ensure clean shutdown
@@ -1276,9 +1300,10 @@ def main():
             # resources and avoiding interference with other parts of the
         # system.
         GPS.deinit() # properly release UART before exit
+        time.sleep(1) # short pause to ensure clean shutdown        
 
-        #    time.sleep(1) # short pause to ensure clean shutdown        
-
+        #reset()
+        
         # blank the OLED screen, ready for next display output
         display.fill(0)
         display.show()

@@ -35,3 +35,9 @@ mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306.py :
 To delete files from the raspberrypi pico 2 w:
 ---------------------------------------------
 mpremote connect /dev/ttyACM0 fs rm :ultimateGPStracker.py
+
+
+mpremote commands work with source to destination, so copy from pico
+to current directory
+------------------------------------------------------------------------
+mpremote connect /dev/ttyACM0 fs cp :ultimateGPStracker.log .

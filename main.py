@@ -67,14 +67,76 @@
 # Since pico is a 3.3V device 3.3V needs to be used to power I2C
 # devices.
 
-from machine import Pin, I2C, UART
+from machine import Pin, I2C, UART, reset
 import time
 import _thread
 from ssd1306 import SSD1306_I2C
 import math
 import sys
+import os  # Import os module for file system operations
+
 
 #time.sleep(10)
+def logging2pico():
+
+    # Logs latitude  and longitude values  as comma seperated  list on
+    # seperate lines into a logfile on the raspberry pi pico w.
+
+    # Note:  you  may be  concerned  about  the open/close  each  time
+    # logging2pico() is called but really the overhead in this program
+    # is running  python so it's no  big deal and probably  better for
+    # program simplicity.
+
+    # Note: the pico  has 2MB flash, 1MB for the  firmware and 1MB for
+    # were you can store data.  So  be cognisant of how often you want
+    # to log.
+
+    try:
+        # Open logfile in append mode ('a').  This will append to an
+        # existing file or create it if it doesn't exist.  Using the
+        # 'with' keyword lets the system handle when the file should
+        # be closed.
+        with open('ultimateGPStracker.log', 'a') as fileApicoFlash:  
+
+            # Remember that  readGPSdata() thread runs to  get the raw
+            # NMEA  sentences  into NMEAdata/NMEAmain  map/dictionary.
+            # Then  parseAndProcessGPSdata()   populates  the  GPSdata
+            # map/dictionary. GPSdata dictionary is global. 
+            
+            # Get the current latitude and longatude values.
+            curLatitude = GPSdata['latitudeDecimalDegrees']
+            curLongitude = GPSdata['longitudeDecimalDegrees']
+
+            # Construct a CSV line string of current latitude and
+            # longitude values.
+            appendLineCSVstrLine = str(curLatitude) + "," + str(curLongitude)
+
+            # fileApicoFlash.write() requires a string like "30.1,29.8,31.0"
+            # Append the line with a newline
+            fileApicoFlash.write(appendLineCSVstrLine + '\n')
+
+            # paul here  adds: It forces  python to write its  data in
+            # the RAM buffer to the  file.  Though 'with' block out of
+            # scope should do this anyway  but if your program crashes
+            # or the  pico resets  before the  with block  closes that
+            # last line might never make it to the flash.
+            fileApicoFlash.flush()
+            time.sleep(0.1)  # sleep 0.1 seconds, 10th of a second, 100ms
+            
+            #print("dbg: logging2pico: Appended Line is=", appendLineCSVstrLine)
+
+        # 'with' keyword closes  the file now as it's block  is out of
+        # scope.  The file is closed even if an exception occurs.
+            
+        # Confirm data was appended
+        print("Appended new readings to ultimateGPStracker.log")  
+    except OSError as e:
+        # Handle errors like full flash
+        print("Error appending to ultimateGPStracker.log:", e)
+
+    return curLatitude, curLongitude
+
+
 
 def radians2degrees(radians):
 
@@ -322,11 +384,13 @@ def yield_thread():
     time.sleep_ms(0)
     # hakky way to do this is: time.sleep(10)
 
+
+# start: readGPSdata() thread ##################################################
+
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to
 # loose data while processing it.
 
-# start: readGPSdata() thread ##################################################
 def readGPSdata():
     # hacky time.sleep(10) as this also yeilds the thread
 
@@ -696,7 +760,20 @@ def displayOLED():
 
            
 
+def displayOLEDlogging(curLatitude, curLongitude):
 
+    global logging
+    
+    display.fill(0)
+    display.text("Logging...", 0, 0)
+    display.text("Lat:" + str(curLatitude), 0, 8)
+    display.text("Long:" + str(curLongitude), 0, 16)
+    display.text("Press Button2 ", 0, 24)
+    display.text("to turn OFF.", 0, 32)
+    display.show()
+    
+
+        
 def is_leap_year(year):
     # Leap year rule: divisible by 4, but centuries must be divisible by 400
     # This matches the exact Gregorian calendar rule.
@@ -841,7 +918,7 @@ def butOneIRQ(pin):
     butOneValue = butOne.value() # member function of butOne object
     #print("butOneValue", butOneValue)
 
-    # denouncing the switch
+    # debouncing the switch
     #
     if butOneValue==0:
         butOneDown = time.ticks_ms() # time when button pressed down
@@ -859,39 +936,40 @@ def butOneIRQ(pin):
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
         systemState += 1
-        print('dbg: butOneIRQ: Button One Triggered')
+        #print('dbg: butOneIRQ: Button One Triggered')
     butOneOld=butOneValue
 
     
 
-# def button2IRQ(pin):
+def button2irq(pin):
 
-#     global button2Up,button2Down
-#     global button2Old #previous state of button
-#     global screenOne
-#     button2Value = button2.value() # member function of button2 object
-#     #print("button2Value", button2Value)
+    global button2up, button2down
+    global button2old # previous state of button
+    global logging
+    button2value = button2.value() # member function of button2 object
+    #print("dbg: button2irq: button2value=", button2value)
 
-#     # denouncing the switch
-#     #
-#     if button2Value==0:
-#         button2Down = time.ticks_ms() # time when button pressed down
-#     else:
-#         button2Value==1
-#         button2Up = time.ticks_ms() # time when button goes back up
+    # deboundcing the switch
+    #
+    if button2value==0:
+        button2down = time.ticks_ms() # time when button pressed down
+    else:
+        button2value==1
+        button2up = time.ticks_ms() # time when button goes back up
 
-#     # If in the last loop the button was in the up state and is now
-#     # pressed down in this loop, with a 50ms hysteresis(for switch
-#     # debounce noise, eg may get multiple 0's before you get a 1 and
-#     # visa versa).  Also, obviously button is pressed down after it was
-#     # in the up state last so button2Down-button2Up is a +ve value.
-#     if (button2Old==1) and (button2Value==0) and ((button2Down-button2Up) > 50):
-#         # This is atomic for simple assignments like booleans in
-#         # mycropython.  Counters, lists, dicts, multi-step operations:
-#         # use disable_irq() or carefully designed atomic methods.
-#         screenOne = not screenOne
-#         print('Button Two Triggered')
-#     button2Old=button2Value
+    # If in the last loop the button was in the up state and is now
+    # pressed down in this loop, with a 50ms hysteresis(for switch
+    # debounce noise, eg may get multiple 0's before you get a 1 and
+    # visa versa).  Also, obviously button is pressed down after it was
+    # in the up state last so button2Down-button2Up is a +ve value.
+    if (button2old==1) and (button2value==0) and ((button2down-button2up) > 50):
+        # This is atomic for simple assignments like booleans in
+        # mycropython.  Counters, lists, dicts, multi-step operations:
+        # use disable_irq() or carefully designed atomic methods.
+        logging = not logging
+        #print('dbg: button2irq: Button Two Triggered')
+        #print("dbg: logging=", logging)
+    button2old=button2value
    
 
 
@@ -1083,7 +1161,27 @@ def main():
     butOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = butOneIRQ)
 
 
-    # Setup IRQ on yellow button press to goto next page on ssd1302 OLED
+    # Setup IRQ on green button press to start/stop logging latitude
+    # and logitude
+    
+    global button2pin # button 2 is connected to GPIO pin 11
+    button2pin = 11 # button 2 is connected to GPIO pin 11
+    global button2
+    button2 = Pin(button2pin, Pin.IN, Pin.PULL_UP)# object on GPIO pin 11
+    global button2up
+    button2up = 0 # button goes down to up
+    global button2down
+    button2down = 0# button goes up to down
+    global button2old
+    button2old = 1 # last time through the loop the buttion was up
+    global logging # start logging=True, or stop logging=False
+    logging = False
+    
+ 
+    # button going from 1 to 0, call interrupt routine called butOneIRQ
+    # OR
+    # button going from 0 to 1, cal interrupt routine called butOneIRQ
+    button2.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = button2irq)
 
     # launch the reading data thread readGPSdata()
     _thread.start_new_thread(readGPSdata,())
@@ -1093,6 +1191,8 @@ def main():
     #numTimesToAsk = 0
     global systemState
     systemState = 0
+
+
     try:
         while True:
             # You need to acquire the lock as readGPSdata() thread may be
@@ -1102,98 +1202,73 @@ def main():
             NMEAmain = NMEAdata.copy()
             dataLock.release()
             #print(NMEAmain['GPGGA'])
+
+            #
             parseAndProcessGPSdata(NMEAmain)
+            
             if GPSdata['fix'] == False:
                 print("Waiting for Fix . . .")
                 displayOLED()
             else:
                 # we have a fix
 
-                # NOTE, the  more sattilites we  get for our fix  the more
-                # accurate the  position, ie latitude and  longitude.  You
-                # can verify this on google earth or openstreetmap.
+                if not logging:
 
-                print("We have a satellite fix, Ultimate GPS Tracker Report: ")
-                print("Time:", GPSdata['time'])
-                print("Date:", GPSdata['date'])
-                print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
+                    # NOTE, the  more sattilites we  get for our fix  the more
+                    # accurate the  position, ie latitude and  longitude.  You
+                    # can verify this on google earth or openstreetmap.
 
-                # we extract latitude and longitude in the format of
-                # openstreetmap and google earth
-                print("Latitude and Longitude: ",
-                GPSdata['latitudeDecimalDegrees'],
-                GPSdata['longitudeDecimalDegrees'])
+                    print("We have a satellite fix, Ultimate GPS Tracker Report: ")
+                    print("Time:", GPSdata['time'])
+                    print("Date:", GPSdata['date'])
+                    print("NumSattelites4fix: ", GPSdata['numSattelites4fix'])
 
-                print("Knots: ", str(GPSdata['knots']) + " km/h")
-                print("Heading: ", str(GPSdata['heading']) + " deg")
-                print("Geoid True Altitude:", str(GPSdata['trueAltitude']) + " m")
-                print("GPS Ellipsoid Altitude:", str(GPSdata['altitude']) + " m")
-                #print("Mag VarDir", GPSdata['Mag VarDir'])
-    
-                # Send the data to the sdd1306 OLED display.  That is write
-                # the contents of the FrameBuffer to display memory
-                displayOLED()
+                    # we extract latitude and longitude in the format of
+                    # openstreetmap and google earth
+                    print("Latitude and Longitude: ",
+                    GPSdata['latitudeDecimalDegrees'],
+                    GPSdata['longitudeDecimalDegrees'])
 
-                # displayOLED() calculates the point to point distance and heading
-                print("Great-circle distance Point1 to Point2:",
-                      str(GPSdata['distanceP1P2']) + " m")
-                #global headingP1P2
-                #heading = GPSdata.get('headingP1P2')
-                heading = GPSdata.get('headingP1P2')
-                #print("dbg: main: heading=", heading)
-                if heading is None:
-                    print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                          "N/A")
+                    print("Knots: ", str(GPSdata['knots']) + " km/h")
+                    print("Heading: ", str(GPSdata['heading']) + " deg")
+                    print("Geoid True Altitude:", str(GPSdata['trueAltitude']) + " m")
+                    print("GPS Ellipsoid Altitude:", str(GPSdata['altitude']) + " m")
+                    #print("Mag VarDir", GPSdata['Mag VarDir'])
+
+                    # Send the data to the sdd1306 OLED display.  That is write
+                    # the contents of the FrameBuffer to display memory
+                    displayOLED()
+
+
+                    # displayOLED() calculates the point to point distance and heading
+                    print("Great-circle distance Point1 to Point2:",
+                          str(GPSdata['distanceP1P2']) + " m")
+                    #global headingP1P2
+                    #heading = GPSdata.get('headingP1P2')
+                    heading = GPSdata.get('headingP1P2')
+                    #print("dbg: main: heading=", heading)
+                    if heading is None:
+                        print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                              "N/A")
+                    else:
+                        print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
+                              str(GPSdata['headingP1P2']) + " deg")
+                        #heading = None
                 else:
-                    print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
-                          str(GPSdata['headingP1P2']) + " deg")
+                    # button2 has been pressed to start logging
 
-                # Sydney
-                # latitudeDecimalDegrees1, longitudeDecimalDegrees1
-                # = -33.8688, 151.2093
-                # Melbourne
-                # latitudeDecimalDegrees2, lonitudeDecimalDegrees2
-                #= -37.8136, 144.9631  # Melbourne
+                    latitudeCur, longitudeCur = logging2pico()
 
-                # TESTING, distance and heading from Sydney and Melbourne
-                # Sydney
-                # latitudeDecimalDegrees1 = -33.8688
-                # longitudeDecimalDegrees1 = 151.2093
+                    displayOLEDlogging(latitudeCur, longitudeCur)
 
-                # Melbourne
-                # latitudeDecimalDegrees2 = -37.8136
-                # longitudeDecimalDegrees2 = 144.9631
+                    print("On Pico, LOGGING Latitude & Longitude to"
+                          " ultimateGPStracker.log ")
 
-                # Pauls property from end to gate:
-                # latitudeDecimalDegrees1? 0.478028
-                # longitudeDecimalDegrees1? 33.163614
-                # latitudeDecimalDegrees2? 0.479399
-                # longitudeDecimalDegrees2? 33.165501
-                # Great-circle distance Point1 to Point2: 0.26 km
-                # Heading/Bearing (Longitude Degrees from North) Point1 to Point2: 54.07 deg
-
-                # numTimesToAsk += 1;
-                # for i in range(1):
-
-                #     # Only ask for input once at this stage
-                #     if (numTimesToAsk > 1):
-                #         break
-
-                #     print("Enter Coordinates in Decimal Degrees:")
-                #     latitudeDecimalDegrees1 = float(input("\tlatitudeDecimalDegrees1? "))
-                #     longitudeDecimalDegrees1 = float(input("\tlongitudeDecimalDegrees1? "))
-                #     latitudeDecimalDegrees2 = float(input("\tlatitudeDecimalDegrees2? "))
-                #     longitudeDecimalDegrees2 = float(input("\tlongitudeDecimalDegrees2? "))
-                #     distanceBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                #                               longitudeDecimalDegrees1,
-                #                               latitudeDecimalDegrees2,
-                #                               longitudeDecimalDegrees2)
-                #     headingBtw2PointsOnEarth(latitudeDecimalDegrees1,
-                #                              longitudeDecimalDegrees1,
-                #                              latitudeDecimalDegrees2,
-                #                              longitudeDecimalDegrees2)
-
-                #time.sleep(10)
+                    # only makes sence to go back to first screen
+                    # after you have finished logging data
+                    systemState = 0                    
+                    
+                    
 
 
             print()
@@ -1215,7 +1290,8 @@ def main():
                               # keyboardinterrupt may be just a ctrl-C
 
         keepRunning = False # kill main thread 
-
+        time.sleep(1)
+        
         print("\nStopping Program . . . Cleaning Up UART")
         # we don't know why sleeps don't work here but do in paul's code
         #    time.sleep(1) # short pause to ensure clean shutdown
@@ -1224,9 +1300,10 @@ def main():
             # resources and avoiding interference with other parts of the
         # system.
         GPS.deinit() # properly release UART before exit
+        time.sleep(1) # short pause to ensure clean shutdown        
 
-        #    time.sleep(1) # short pause to ensure clean shutdown        
-
+        #reset()
+        
         # blank the OLED screen, ready for next display output
         display.fill(0)
         display.show()

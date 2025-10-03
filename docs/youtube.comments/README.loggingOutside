@@ -1,0 +1,11 @@
+NO WRKS:
+I have managed to create a logfile on the pico while moving around outside.  I was able to convert the logfile to .klz/.klm with GPS Visualizer and put it into google earth, google earth shows the path I travelled outside correctly.  I also managed to use a second button to start and stop logging, so the original functionality of the program is still there on button 1.  However, I am still having to copy over the logfile from the pico to the PC with mpremote command line tools.  Still working on using my python program to copy the pico logfile to the PC, really stuck though.  The python program seemed to work as long as I unplugged and replugged the USB cable when I was running main.py from thonny for small files but not large files.
+
+
+
+WORKS:
+I have managed to create a logfile on the pico while moving around outside.  I was able to convert the logfile to .klz/.klm with GPS Visualizer and put it into google earth, google earth shows the path I travelled outside correctly.  I also managed to use a second button to start and stop logging, so the original functionality of the program is still there on button 1.  However, I am still having to copy over the logfile from the pico to the PC with mpremote command line tools.  Still working on using my python program to copy the pico logfile to the PC, really stuck though.
+
+
+WORKS, seemed to not like main.py
+I have managed to create a logfile on the pico while moving around outside.  I was able to convert the logfile to .klz/.klm with GPS Visualizer and put it into google earth, google earth shows the path I travelled outside correctly.  I also managed to use a second button to start and stop logging, so the original functionality of the program is still there on button 1.  However, I am still having to copy over the logfile from the pico to the PC with mpremote command line tools.  Still working on using my python program to copy the pico logfile to the PC, really stuck though.  The python program seemed to work as long as I unplugged and replugged the USB cable when I was running main from thonny for small files but not large files.

@@ -364,8 +364,20 @@ Python command line program to xfer logfiles/files flashed to the
 Pico W to PC.
 -------------
 
-Once the logfile has been created on the pico, ultimateGPStracker.log.
-To      read      this      logfile       to      the      PC      use
+Once the logfile has been created on the pico, ultimateGPStracker.log,
+read       this       logfile        to       the       PC       using
 xfer.ultimateGPStracker.log.Pico2PC.py.   However,  somtimes you  will
 get blank  lines in your PC  logfile, ultimateGPStracker.log.OnPC.log.
-I'm not sure why this is so yet, needs further investigation.
+I'm  not  sure  why  this  is so  yet,  needs  further  investigation.
+However, if you unplug the pico  and replug after you have created the
+logfile  on it,  xfer.ultimateGPStracker.log.Pico2PC.py will  transfer
+the logfile to the PC correctly.
+
+
+Converting logged csv of latitudes and longitudes to .kmz/.kml for
+------------------------------------------------------------------
+input to google earth.
+----------------------
+
+Use gpsvisualizer:
+Goto: https://www.gpsvisualizer.com/map_input?form=googleearth

@@ -4,8 +4,10 @@
 import serial
 import time
 
+
 serialPort= "/dev/ttyACM0"
 baudRate = 115200 # for the pico it dosen't seem you can change this baudRate
+
 
 # Open serial port connection to the pico.
 
@@ -18,6 +20,29 @@ serialObj = serial.Serial(serialPort, baudRate, timeout=5)
 # To give the UART/hardware and python script time to connect to each
 # other.
 time.sleep(1)
+
+
+# So you  don't need to unplug  and plug the pico  between writing the
+# logfile and trying to run this  file.  The plug unplug works because
+# it closes  and open file  handles, clears the  REPL state(micopython
+# state, or interactive prompt >>>)  and reinitialises the USB serial.
+# Note I'm  assuming the  filePicoHandle.close() has  already occured,
+# otherwise you need to add that to your code.
+
+# serialObj.write(b'\x03')  # Ctrl-C: break any running code
+# time.sleep(1)
+# serialObj.write(b'\x04')  # Ctrl-D: soft reset
+# time.sleep(1)
+
+# Stop any running code
+# serialObj.write(b'\x03')  # Ctrl-C
+# time.sleep(0.1)
+# serialObj.reset_input_buffer()
+
+# # Soft reset
+# serialObj.write(b'\x04')  # Ctrl-D
+# time.sleep(1)
+
 
 # The pico is really the system that xfers the data to this python
 # script running on the PC.  So we need to send commands to the pico
@@ -62,7 +87,7 @@ serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
 # .strip() removes and leading and trailing whitespace charcters from
 # the string, including \r\n
 picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
-#print(picoCmdResultLine)
+###print(picoCmdResultLine)
 time.sleep(1)
 
 # Reading from logfile logfile on the pico to logfile on the PC:
@@ -83,17 +108,25 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
         # Read the echo of the readline() command.
 
         #.decode('utf-8') converts the bytes received from serial port
-        # into    a    string.    So,    Latitude,Longitude    becomes
-        # "Latitude,Longitude"???
+        # into    a    string.
 
         # .strip() removes and leading and trailing whitespace charcters from
         # the string, including \r\n
+
+        # .readline() method blocks waiting from data from the pico or
+        # untill the timout.
         echoLine = serialObj.readline().decode('utf-8').strip()
-        #time.sleep(0.01)
-        #print("Echo Line: ", echoLine)
+        if not echoLine:
+            print("No echo recived from pico, timout hit. Breaking...")
+            break
+        ###print("Echo Line: ", echoLine)
+
         # Read the lines of the pico logfile
         picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
-        #print("File line: ", picoCmdResultLine)
+        if not picoCmdResultLine:
+            print("No data received from pico, timout hit. Breaking..")
+            break
+        ###print("File line: ", picoCmdResultLine)
         
         
         # Write what is  in the logfile on the pico into  the logfile on
@@ -111,7 +144,7 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             # This removes the \, n, ' ie three characters.
             picoCmdResultLine = picoCmdResultLine[1:-3]
             # newline to have each line under the other instead of side by side
-            #print("Pico File Line read in is=", picoCmdResultLine)
+            ###print("Pico File Line read in is=", picoCmdResultLine)
             filePChandle.write(picoCmdResultLine + '\n')
 
 # close the log file on the pico
