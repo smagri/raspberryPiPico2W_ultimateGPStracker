@@ -373,6 +373,12 @@ However, if you unplug the pico  and replug after you have created the
 logfile  on it,  xfer.ultimateGPStracker.log.Pico2PC.py will  transfer
 the logfile to the PC correctly.
 
+The  problem turned  out that  the python  program with  prints in  it
+worked and without prints it did not work.  I managed to work out that
+the   UART   had   junk   data   in  it   before   my   main   program
+xfer.ultimateGPStracker.log.Pico2PC.py started so I added some code to
+flush the UART before the main part and end part of my code was run.
+
 
 Converting logged csv of latitudes and longitudes to .kmz/.kml for
 ------------------------------------------------------------------

@@ -1,0 +1,52 @@
+NO WRKS: it didn't like main.py
+
+​ @paulmcwhorter  Yes I realised main.py should not be on the pico while xfering the log file, and, I didn't have thonny connected to the pico.  I have now managed to transfer my log file on the pico to my PC using a python script.  The problem I was that when I had the prints in the python script, as per Paul's example it worked, when I removed the prints it didn't work. Finally I worked out that the UART had data in it before I ran my xfer python program  and so my readline()'s were out of sync, so I had to flush the data out of the UART before I ran the main part of my code.  I had to put the following in my code at the start:
+serialObj = serial.Serial(serialPort, baudRate, timeout=5)
+
+# To  clear UART  buffer before  the rest  of my  python script  runs.
+# Otherwise readline()'s were out of sink.
+serialObj.write(b"print(\"ready\")\r\n")
+while True:
+    flushLine = serialObj.readline().decode("utf-8").strip()
+    if flushLine == "ready":
+        print("Flushed UART,", flushLine)
+        break
+
+And at the end for safety:
+# Close the log file on the pico
+serialObj.write(b"filePicoHandle.close()\r\n")
+
+# To clear UART buffer for safety
+serialObj.write(b"print(\"finished\")\r\n")
+while True:
+    flushLine = serialObj.readline().decode("utf-8").strip()
+    if flushLine == "finished":
+        print("Flushed UART,", flushLine)
+        break
+
+
+WRKS: main.py -> main
+Yes I realised main should not be on the pico while xfering the  log file, and, I didn't have thonny connected to the pico.  I have now managed to transfer my log file on the pico to my PC using a python script.  The problem I was that when I had the prints in the python script, as per Paul's example it worked, when I removed the prints it didn't work. Finally I worked out that the UART had data in it before I ran my xfer python program  and so my readline()'s were out of sync, so I had to flush the data out of the UART before I ran the main part of my code.  I had to put the following in my code at the start: 
+
+serialObj = serial.Serial(serialPort, baudRate, timeout=5)                           
+                                                                                     
+# To  clear UART  buffer before  the rest  of my  python script  runs.               
+# Otherwise readline()'s were out of sink.                                           
+serialObj.write(b"print(\"ready\")\r\n")                                             
+while True:                                                                          
+    flushLine = serialObj.readline().decode("utf-8").strip()                         
+    if flushLine == "ready":                                                         
+        print("Flushed UART,", flushLine)                                            
+        break                         
+
+And at the end for safety:                                                           
+# Close the log file on the pico                                                     
+serialObj.write(b"filePicoHandle.close()\r\n")                                       
+                                                                                     
+# To clear UART buffer for safety                                                    
+serialObj.write(b"print(\"finished\")\r\n")                                          
+while True:                                                                          
+    flushLine = serialObj.readline().decode("utf-8").strip()                         
+    if flushLine == "finished":                                                      
+        print("Flushed UART,", flushLine)                                            
+        break                                                                        
