@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+
 # Python command line program to xfer logfiles/files flashed to the
 # Pico W to PC.
 
@@ -17,31 +20,16 @@ baudRate = 115200 # for the pico it dosen't seem you can change this baudRate
 # readline() operation  will wait  at most 5  seconds for  data before
 # giving up.
 serialObj = serial.Serial(serialPort, baudRate, timeout=5)
-# To give the UART/hardware and python script time to connect to each
-# other.
-time.sleep(1)
 
+# To  clear UART  buffer before  the rest  of my  python script  runs.
+# Otherwise readline()'s were out of sink.
+serialObj.write(b"print(\"ready\")\r\n")
+while True:
+    flushLine = serialObj.readline().decode("utf-8").strip()
+    if flushLine == "ready":
+        print("Flushed UART,", flushLine)
+        break
 
-# So you  don't need to unplug  and plug the pico  between writing the
-# logfile and trying to run this  file.  The plug unplug works because
-# it closes  and open file  handles, clears the  REPL state(micopython
-# state, or interactive prompt >>>)  and reinitialises the USB serial.
-# Note I'm  assuming the  filePicoHandle.close() has  already occured,
-# otherwise you need to add that to your code.
-
-# serialObj.write(b'\x03')  # Ctrl-C: break any running code
-# time.sleep(1)
-# serialObj.write(b'\x04')  # Ctrl-D: soft reset
-# time.sleep(1)
-
-# Stop any running code
-# serialObj.write(b'\x03')  # Ctrl-C
-# time.sleep(0.1)
-# serialObj.reset_input_buffer()
-
-# # Soft reset
-# serialObj.write(b'\x04')  # Ctrl-D
-# time.sleep(1)
 
 
 # The pico is really the system that xfers the data to this python
@@ -78,6 +66,7 @@ time.sleep(1)
 # string objects.
 serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
 
+
 # After  the pico  recived the  write() command  it returns/echos  the
 # command back to the PC, so we can read it in.
 
@@ -87,12 +76,14 @@ serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
 # .strip() removes and leading and trailing whitespace charcters from
 # the string, including \r\n
 picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
-###print(picoCmdResultLine)
-time.sleep(1)
+#print(picoCmdResultLine)
+#time.sleep(1)
 
 # Reading from logfile logfile on the pico to logfile on the PC:
 
-# PC logfile opened and filePChandle is the program handle to it.
+# PC  logfile opened  and filePChandle  is the  program handle  to it.
+# Opening the file in write mode  creates the PC logfile if it doesn't
+# exist.  If it does exist it overwrites the PC logfile.
 with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
 
     # Read all the lines of the pico logfile till there are no lines.
@@ -120,14 +111,15 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             print("No echo recived from pico, timout hit. Breaking...")
             break
         ###print("Echo Line: ", echoLine)
+        # time.sleep(0.1)
 
         # Read the lines of the pico logfile
         picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
         if not picoCmdResultLine:
             print("No data received from pico, timout hit. Breaking..")
             break
-        ###print("File line: ", picoCmdResultLine)
-        
+        ###print("Pico File line: ", picoCmdResultLine)
+        #time.sleep(0.1)
         
         # Write what is  in the logfile on the pico into  the logfile on
         # the PC.
@@ -144,10 +136,20 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             # This removes the \, n, ' ie three characters.
             picoCmdResultLine = picoCmdResultLine[1:-3]
             # newline to have each line under the other instead of side by side
-            ###print("Pico File Line read in is=", picoCmdResultLine)
+            #print("Pico File line written to PC logfile=", picoCmdResultLine)
             filePChandle.write(picoCmdResultLine + '\n')
+            #time.sleep(0.1)
 
-# close the log file on the pico
+# Close the log file on the pico
 serialObj.write(b"filePicoHandle.close()\r\n")
+
+# To clear UART buffer for safety
+serialObj.write(b"print(\"finished\")\r\n")
+while True:
+    flushLine = serialObj.readline().decode("utf-8").strip()
+    if flushLine == "finished":
+        print("Flushed UART,", flushLine)
+        break
+
 # close the serial port connection from the PC to the pico.
 serialObj.close()
