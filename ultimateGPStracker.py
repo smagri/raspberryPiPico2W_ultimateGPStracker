@@ -345,36 +345,27 @@ def sydneyAutoCalcUTCoffset(year, month, day, hour):
 
     # --- October case: DST starts on first Sunday at 2:00am ---
     if month == 10:
-        if day > start_day:
-            utcOffset = 11                # after start date → DST
-        elif day == start_day:
-            if (hour >= 2):               # same day: only from 2:00am onward
-                utcOffset = 11
-            else:
-                utcOffset = 10
+        if day > start_day or (day == start_day and hour >= 2):
+            utcOffset = 11
         else:
-            utcOffset = 10                # before start day → not DST
+            utcOffset = 10
 
     # --- April case: DST ends on first Sunday at 3:00am ---
-    if month == 4:
-        if day < end_day:
-            utcOffset = 11                 # before end day → DST
-        elif day == end_day:
-            if (hour < 3):                 # same day: only until 2:59am
-                utcOffset = 11
-            else:
-                utcOffset = 10
+    elif month == 4:
+        if day < end_day or (day == end_day and hour < 3):
+            utcOffset = 11
         else:
-            utcOffset = 10                # after end day → not DST
+            utcOffset = 10
 
     # --- Other months ---
-    if month > 10 or month < 4:
-        utcOffset = 11                    # between Oct–Mar → DST
+    elif month > 10 or month < 4:
+        utcOffset = 11  # Between October and March (exclusive)
     else:
-        utcOffset = 10                    # between Apr–Sep → not DST
+        utcOffset = 10  # Between April and September (exclusive)
 
     
     return utcOffset
+
 
 
 def yield_thread():
