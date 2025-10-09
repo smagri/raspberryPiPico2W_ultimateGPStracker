@@ -345,36 +345,27 @@ def sydneyAutoCalcUTCoffset(year, month, day, hour):
 
     # --- October case: DST starts on first Sunday at 2:00am ---
     if month == 10:
-        if day > start_day:
-            utcOffset = 11                # after start date → DST
-        elif day == start_day:
-            if (hour >= 2):               # same day: only from 2:00am onward
-                utcOffset = 11
-            else:
-                utcOffset = 10
+        if day > start_day or (day == start_day and hour >= 2):
+            utcOffset = 11
         else:
-            utcOffset = 10                # before start day → not DST
+            utcOffset = 10
 
     # --- April case: DST ends on first Sunday at 3:00am ---
-    if month == 4:
-        if day < end_day:
-            utcOffset = 11                 # before end day → DST
-        elif day == end_day:
-            if (hour < 3):                 # same day: only until 2:59am
-                utcOffset = 11
-            else:
-                utcOffset = 10
+    elif month == 4:
+        if day < end_day or (day == end_day and hour < 3):
+            utcOffset = 11
         else:
-            utcOffset = 10                # after end day → not DST
+            utcOffset = 10
 
     # --- Other months ---
-    if month > 10 or month < 4:
-        utcOffset = 11                    # between Oct–Mar → DST
+    elif month > 10 or month < 4:
+        utcOffset = 11  # Between October and March (exclusive)
     else:
-        utcOffset = 10                    # between Apr–Sep → not DST
+        utcOffset = 10  # Between April and September (exclusive)
 
     
     return utcOffset
+
 
 
 def yield_thread():
@@ -762,7 +753,7 @@ def displayOLED():
 
 def displayOLEDlogging(curLatitude, curLongitude):
 
-    global logging
+    #global logging
     
     display.fill(0)
     display.text("Logging...", 0, 0)
@@ -771,7 +762,55 @@ def displayOLEDlogging(curLatitude, curLongitude):
     display.text("Press Button2 ", 0, 24)
     display.text("to turn OFF.", 0, 32)
     display.show()
-    
+
+
+
+def displayOLEDterminateMain():
+
+    # Works out whether  you want to terminate main.py  running on the
+    # pico  at this  stage.  If  you  choose to  terminate main.py  it
+    # doesn't connect  to the serial  port and  you can then  run your
+    # python program on the PC to xfer  the logfile on the pico to the
+    # PC.   The user  has  to press  button2 within  5  seconds of  of
+    # powering the pico  for terminating to occur, otherwise  we go to
+    # the  logging data  stage.   This functionallity  is achived  via
+    # pressing button2.
+
+    # You press button2 within timout seconds after powering the pico
+    # to terminate main.py.
+    global terminateMain
+    terminateTimout = 5
+    terminateStartTime = time.time() # current time
+
+    while (time.time() - terminateStartTime) < terminateTimout:
+        display.fill(0)
+        display.text("Press Button2", 0, 16)
+        display.text("to KILL main.py, ", 0, 24)
+        display.text("u have 5s", 0, 30)
+        display.show()
+        terminateMain = False
+        button2value = button2.value()
+        if button2value == 0:
+            # button2 has been pressed when terminating main.py is
+            # displayed on OLED.
+            display.fill(0)
+            display.text("KILLING main.py...", 0, 0)
+            time.sleep(1) # show user Terminating for just 1 second
+            display.fill(0)
+            display.show()
+
+            # Terminate main.py but this also resets the pico, which
+            # will run main.py again.
+            # sys.exit()
+
+            # So we need this code, then we really have killed main.py
+            # and stopped resetting of the pico.
+            #x = 0
+            #y = x/0
+            terminateMain = True
+            return terminateMain
+        
+        
 
         
 def is_leap_year(year):
@@ -1192,6 +1231,11 @@ def main():
     global systemState
     systemState = 0
 
+    global terminateMain
+    terminateMain = False
+    global logging
+    logging = False
+
 
     try:
         while True:
@@ -1254,9 +1298,20 @@ def main():
                         print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
                               str(GPSdata['headingP1P2']) + " deg")
                         #heading = None
+                elif not terminateMain:
+                    # Handle  button2 events.   That is  start logging
+                    # stage or terminate main.py.   You have 5 seconds
+                    # seconds to  terminate main.py otherwise  we move
+                    # on to the logging stage.
+                    
+                    # Firstly determine if you want to kill main.py,
+                    # otherwise go into the logging stage.
+                    terminateMain = displayOLEDterminateMain()
+                    
                 else:
-                    # button2 has been pressed to start logging
-
+                    # You  have chosen  to go  into the  logging stage
+                    # where  you  log  latitude  and  longatude  to  a
+                    # logfile on the pico.
                     latitudeCur, longitudeCur = logging2pico()
 
                     displayOLEDlogging(latitudeCur, longitudeCur)
