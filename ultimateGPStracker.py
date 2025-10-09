@@ -778,19 +778,19 @@ def displayOLEDterminateMain():
 
     # You press button2 within timout seconds after powering the pico
     # to terminate main.py.
-    global terminateMain
+    global terminateMainTimeout
     global logging
     
-    terminateTimout = 5
-    terminateStartTime = time.time() # current time
+    timeoutTime = 5 # 5 seconds
+    timeoutStartTime = time.time() # current time
 
-    while (time.time() - terminateStartTime) < terminateTimout:
+    while (time.time() - timeoutStartTime) < timeoutTime:
         display.fill(0)
         display.text("Press Button2", 0, 16)
         display.text("to KILL main.py, ", 0, 24)
         display.text("u have 5s", 0, 30)
         display.show()
-        terminateMain = False
+        terminateMainTimeout = False
         #button2value = button2.value()
         # if button2value == 0:
         #     # button2 has been pressed when terminating main.py is
@@ -812,8 +812,8 @@ def displayOLEDterminateMain():
         #     terminateMain = True
         #     logging = True
     logging = True        
-    terminateMain = True       
-    return terminateMain
+    terminateMainTimeout = True       
+    return terminateMainTimeout
         
         
 
@@ -1237,8 +1237,8 @@ def main():
     global systemState
     systemState = 0
 
-    global terminateMain
-    terminateMain = False
+    global terminateMainTimeout
+    terminateMainTimeout = False
     global logging
     logging = False
 
@@ -1305,7 +1305,7 @@ def main():
                               str(GPSdata['headingP1P2']) + " deg")
                         #heading = None
 
-                elif not terminateMain:
+                elif not terminateMainTimeout:
                     # Handle  button2 events.   That is  start logging
                     # stage or terminate main.py.   You have 5 seconds
                     # seconds to  terminate main.py otherwise  we move
@@ -1313,8 +1313,8 @@ def main():
 
                     # Firstly determine if you want to kill main.py,
                     # otherwise go into the logging stage.
-                    terminateMain = displayOLEDterminateMain()
-                    print("dbg: main: terminateMain=", terminateMain)
+                    terminateMainTimeout = displayOLEDterminateMain()
+                    print("dbg: main: terminateMainTimeout=", terminateMainTimeout)
 
                 else:
                         
