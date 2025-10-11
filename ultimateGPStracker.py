@@ -780,38 +780,43 @@ def displayOLEDterminateMain():
     # to terminate main.py.
     global terminateMainTimeout
     global logging
+    global killMain
     
     timeoutTime = 5 # 5 seconds
     timeoutStartTime = time.time() # current time
+    #timeoutCountdown = timeoutTime
 
     while (time.time() - timeoutStartTime) < timeoutTime:
         display.fill(0)
         display.text("Press Button2", 0, 16)
         display.text("to KILL main.py, ", 0, 24)
-        display.text("u have 5s", 0, 30)
+        display.text("u have 5s:", 0, 30)
+        #display.text(str(timeoutCountdown), 96, 30)
         display.show()
         terminateMainTimeout = False
-        #button2value = button2.value()
-        # if button2value == 0:
-        #     # button2 has been pressed when terminating main.py is
-        #     # displayed on OLED.
-        #     display.fill(0)
-        #     display.text("KILLING main.py...", 0, 0)
-        #     time.sleep(1) # show user Terminating for just 1 second
-        #     display.fill(0)
-        #     display.show()
+        #timeoutCountdown -= 1
 
-        #     # Terminate main.py but this also resets the pico, which
-        #     # will run main.py again.
-        #     # sys.exit()
 
-        #     # So we need this code, then we really have killed main.py
-        #     # and stopped resetting of the pico.
-        #     #x = 0
-        #     #y = x/0
+        if button2pressed == 2:
+            print("dbg: displayOLEDterminateMain: button2pressed", button2pressed)
+            display.text("KILLING main.py...", 0, 44)
+            display.show()
+            time.sleep(1) # show user Terminating for just 1 second
+            display.fill(0)
+            display.show()
+
+            # Terminate main.py but this also resets the pico, which
+            # will run main.py again.
+            # sys.exit()
+
+            # So we need this code, then we really have killed main.py
+            # and stopped resetting of the pico.
+            x = 0
+            y = x/0
+        
         #     terminateMain = True
         #     logging = True
-    logging = True        
+    #logging = True        
     terminateMainTimeout = True       
     return terminateMainTimeout
         
@@ -990,6 +995,11 @@ def button2irq(pin):
     global button2up, button2down
     global button2old # previous state of button
     global logging
+    global terminateMainTimeout
+    global killMain
+    global button2pressed
+    
+    
     button2value = button2.value() # member function of button2 object
     #print("dbg: button2irq: button2value=", button2value)
 
@@ -1014,8 +1024,12 @@ def button2irq(pin):
         logging = not logging
         #print('dbg: button2irq: Button Two Triggered')
         #print("dbg: logging=", logging)
+
+        button2pressed += 1
+
     button2old=button2value
-   
+    
+
 
 
 ###############################################################################
@@ -1239,8 +1253,14 @@ def main():
 
     global terminateMainTimeout
     terminateMainTimeout = False
+    global killMain
+    killMain = False
+    
     global logging
     logging = False
+
+    global button2pressed
+    button2pressed = 0
 
 
     try:
