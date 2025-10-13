@@ -754,14 +754,12 @@ def displayOLED():
 
 def displayOLEDlogging(curLatitude, curLongitude):
 
-    #global logging
-    
     display.fill(0)
     display.text("Logging...", 0, 0)
-    display.text("Lat:" + str(curLatitude), 0, 8)
-    display.text("Long:" + str(curLongitude), 0, 16)
-    display.text("Press Button2 ", 0, 24)
-    display.text("to turn OFF.", 0, 32)
+    display.text("Lat:" + str(curLatitude), 0, 16)
+    display.text("Long:" + str(curLongitude), 0, 24)
+    display.text("Press Button2 ", 0, 32)
+    display.text("to turn OFF.", 0, 40)
     display.show()
 
 
@@ -772,21 +770,24 @@ def displayOLEDterminateMain():
     # pico  at this  stage.  If  you  choose to  terminate main.py  it
     # doesn't connect  to the serial  port and  you can then  run your
     # python program on the PC to xfer  the logfile on the pico to the
-    # PC.   The user  has  to press  button2 within  5  seconds of  of
-    # powering the pico  for terminating to occur, otherwise  we go to
-    # the  logging data  stage.   This functionallity  is achived  via
-    # pressing button2.
+    # PC.   The  user  has  to  press button2  a  second  time  within
+    # timoutTime  seconds  of  pressing  button2  the  first  time  to
+    # terminate main.py, otherwise we go to the logging data stage.
+
 
     # You press button2 within timout seconds after powering the pico
     # to terminate main.py.
     global terminateMainTimeout
     global logging
+
+    # TODO: remove from final program
     global killMain
     
     timeoutTime = 5 # 5 seconds
     timeoutStartTime = time.time() # current time
     #timeoutCountdown = timeoutTime
 
+    # While loop executes many times till timeoutTime seconds have elapsed.
     while (time.time() - timeoutStartTime) < timeoutTime:
         display.fill(0)
         display.text("Press Button2", 0, 16)
@@ -797,9 +798,12 @@ def displayOLEDterminateMain():
         terminateMainTimeout = False
         #timeoutCountdown -= 1
 
-
+        # However,  if  button2  is  pressed  before  the  timeoutTime
+        # seconds  are  up main.py  is  killed.   Otherwise after  the
+        # timeoutTime  seconds we  enter logging  mode as  button2 has
+        # been pressed once.  pressed once.
         if button2pressed == 2:
-            print("dbg: displayOLEDterminateMain: button2pressed", button2pressed)
+            #print("dbg: displayOLEDterminateMain: button2pressed", button2pressed)
             display.text("KILLING main.py...", 0, 44)
             display.show()
             time.sleep(1) # show user Terminating for just 1 second
@@ -815,9 +819,9 @@ def displayOLEDterminateMain():
             x = 0
             y = x/0
         
-        #     terminateMain = True
-        #     logging = True
-    #logging = True        
+    # Indicate  to  main() program  loop  that  timoutTime passed  and
+    # button2 has only been pressed  once, hence we will enter logging
+    # mode on the next invocation of the main() loop.
     terminateMainTimeout = True       
     return terminateMainTimeout
         
@@ -996,10 +1000,14 @@ def button2irq(pin):
     global button2up, button2down
     global button2old # previous state of button
     global logging
-    global terminateMainTimeout
-    global killMain
     global button2pressed
+
+
+    # When button2  is pressed button2irq()  gets called.  It  can get
+    # called multiple times  due to the hardware  created ringing that
+    # occurs when a button is pressed.
     
+
     
     button2value = button2.value() # member function of button2 object
     #print("dbg: button2irq: button2value=", button2value)
@@ -1012,20 +1020,34 @@ def button2irq(pin):
         button2value==1
         button2up = time.ticks_ms() # time when button goes back up
 
-    # If in the last loop the button was in the up state and is now
-    # pressed down in this loop, with a 50ms hysteresis(for switch
-    # debounce noise, eg may get multiple 0's before you get a 1 and
-    # visa versa).  Also, obviously button is pressed down after it was
-    # in the up state last so button2Down-button2Up is a +ve value.
+    # If in the last invocation the button  is in the up state and now
+    # its in the down state and  50ms has passed we have debounced the
+    # switch/button and can thus safely  indicate to the code that the
+    # button has  been pressed.  The  50ms is the hysteresis  given to
+    # debouncing the switch.
+    
+    # Also, obviously button is pressed down after it was in the up
+    # state last so button2Down-button2Up is a +ve value.
     if (button2old==1) and (button2value==0) and ((button2down-button2up) > 50):
+
+        #  This does  not execute  till the  button up/down  state has
+        #  been debounced.
+        
+        
         # This is atomic for simple assignments like booleans in
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
-        #logging = not logging
+
+        # We enter logging mode when button2 is pressed, but only if
+        # the 5 second timout has occured the first time the button is
+        # pressed.
         logging = not logging
         #print('dbg: button2irq: Button Two Triggered')
         #print("dbg: logging=", logging)
 
+        # To determine if button2 is pressed within the 5 second wait
+        # before logging starts.  Once set to 2 within the 5 second
+        # wait the program, main.py exits with a divide by 0.
         button2pressed += 1
 
     button2old=button2value
@@ -1327,21 +1349,23 @@ def main():
                         #heading = None
 
                 elif not terminateMainTimeout:
-                    # Handle  button2 events.   That is  start logging
-                    # stage or terminate main.py.   You have 5 seconds
-                    # seconds to  terminate main.py otherwise  we move
-                    # on to the logging stage.
 
-                    # Firstly determine if you want to kill main.py,
-                    # otherwise go into the logging stage.
+                    # Allows  you  to  start   logging  mode  or  kill
+                    # main.py, it blocks for timoutTime seconds before
+                    # logging  mode starts.   However,  if button2  is
+                    # pressed a second time  within the timeoutTime it
+                    # kills main.py without rebooting the pico.
+                    
                     terminateMainTimeout = displayOLEDterminateMain()
-                    print("dbg: main: terminateMainTimeout=", terminateMainTimeout)
+                    print("dbg: main: terminateMainTimeout=",
+                          terminateMainTimeout)
 
                 else:
                         
                     # You  have chosen  to go  into the  logging stage
                     # where  you  log  latitude  and  longatude  to  a
                     # logfile on the pico.
+                    
                     print("dbg: main: logging=", logging)
                     latitudeCur, longitudeCur = logging2pico()
 
@@ -1351,20 +1375,20 @@ def main():
                     print("On Pico, LOGGING Latitude & Longitude to"
                           " ultimateGPStracker.log ")
 
-                    #time.sleep(10)
                     # only makes sence to go back to first screen
                     # after you have finished logging data
                     systemState = 0                    
                     
                     
 
-
+            # stops the loop from hogging the cpu as the sleep yeilds
+            # to other processed.
             print()
             time.sleep(1)
 
             # NOTE: this does not overflow the buffer as readGPSdata()
             # executes in another thread.
-            # time.sleep(10)
+
 
 
     # This MicroPython code block is part of an except clause that handles

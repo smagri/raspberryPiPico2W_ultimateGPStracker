@@ -230,12 +230,38 @@ system and using the Sunfounder Bread Volt.
 -------------------------------------------------------------------
 
 Firstly, my  rasberry pi  pico 2 w  is plugged into  the USB  port, no
-Bread Volt attached.  Note it is a pico 2 w not a pico w.
+Bread Volt  attached.  Note it  is a pico  2 w not  a pico w.   A hard
+reboot  mens the  microcontroller resets  completely. RAM  is cleared,
+main.py runs again  from the start.  All peripherals,  UART, I2C, SPI,
+GPIO, etc  reset to default  states.  USB serial sessions  are dropped
+and reconnected.
+
+Ways to do it:
+
+Press the RESET button on the board. ie RUN pin30 to ground
+momenterily.
+
+Disconnect and reconnect the USB power.
+
+Call machine.reset() in MicroPython (which triggers a full hardware
+reset).
+
+
 
 Then I  started thonny, which does  a soft reboot of  the raspberry pi
-pico 2  w on  startup, and  so my code  worked. 
+pico 2  w on startup,  and so my code  worked. A soft  reboot restarts
+micropython without resetting the entire board hardware.  Your main.py
+will run again.
 
-So I  tried to  flash main.py  via thonny File->Save  As and  it hung.
+Ways to do it:
+
+In the REPL, press Ctrl+D — this performs a soft reboot.
+
+From code, call sys.exit() (then MicroPython restarts when you reconnect).
+
+
+
+So I tried to flash main.py via thonny File->Save As and it hung.
 Consequently, I had  to execute the following commands  on the command
 line to flash main.py into the raspberry pi pico 2 w:
 
@@ -243,15 +269,21 @@ Firstly, you will need these:
 * pip install mpremote
 * wget https://datasheets.raspberrypi.com/soft/flash_nuke.uf2
 
-* with boot sel pressed plug in usb cable
+* With boot sel pressed plug in usb cable.
+* OR 
+* Put the pico in bootloader mode, that is, now RP2350,that is pico
+  will appear as a drive on your PC and you can copy things to it.
+  
 * cp flash_nuke.uf2 /media/.../RP2350/ ,to clear mycropython from pico
 * cp mp_firmware_unofficial_latest.uf2 /media/.../RP2350/ ,to copy
-  back mycropython
+  back mycropython.
 * mpremote connect /dev/ttyACM0 fs ls ,should be empty
-* mpremote connect /dev/ttyACM0 fs cp  main.py ssd1306.py : ,to copy back
-  your main file
-* then your main.py is flashed to your pico* mpremote connect /dev/ttyACM0 fs ls  ,should show main.py and
-  ssd1306.py to be there.
+
+* mpremote  connect /dev/ttyACM0 fs  cp main.py ssd1306.py :  ,to copy
+  back your main file, cp source to destination, : is the pico.
+  
+* Then your main.py is flashed to your pico.  mpremote connect
+  /dev/ttyACM0 fs ls ,should show main.py and ssd1306.py to be there.
 
 However, this still didn't solve my problem with a hard reboot running
 my code.  So then  I had to modify my code to fix  my bug.  Remember a
@@ -396,8 +428,16 @@ select comma seperated variable input
 select google earth variable output
 gpsbabel -i csv -f ultimateGPStracker.log.OnPC.log -o kml -F output.kml
 
-When mpromete get stuck
-kill main
+However, gpsbabelfe seems not as intuative as gpsvisualizer.
+
+
+
+When mpremote gets stuck:
+------------------------
+
+* kill main with button2
+
+* to get the python prompt and just connect to the serial port.
 mpremote connect /dev/ttyACM0 
 >>> import os
 >>> os.listdir(".") 
@@ -406,5 +446,8 @@ mpremote connect /dev/ttyACM0
 >>> os.listdir(".") 
 ['ssd1306.py', 'ultimateGPStracker.log']
 >>> 
-unplug and replug in the usb cable - hard reboot
-mpremote connect /dev/ttyACM0 fs cp main.py :
+
+* unplug and replug in the usb cable - hard reboot
+
+* do an mpremote command:
+  mpremote connect /dev/ttyACM0 fs cp main.py :
