@@ -756,10 +756,10 @@ def displayOLEDlogging(curLatitude, curLongitude):
 
     display.fill(0)
     display.text("Logging...", 0, 0)
-    display.text("Lat:" + str(curLatitude), 0, 16)
-    display.text("Long:" + str(curLongitude), 0, 24)
-    display.text("Press Button2 ", 0, 32)
-    display.text("to turn OFF.", 0, 40)
+    display.text("Lat:" + str(curLatitude), 0, 24)
+    display.text("Long:" + str(curLongitude), 0, 32)
+    display.text("Press Button2 ", 0, 48)
+    display.text("to turn OFF.", 0, 56)
     display.show()
 
 
