@@ -780,8 +780,6 @@ def displayOLEDterminateMain():
     global terminateMainTimeout
     global logging
 
-    # TODO: remove from final program
-    global killMain
     
     timeoutTime = 5 # 5 seconds
     timeoutStartTime = time.time() # current time
@@ -1270,18 +1268,19 @@ def main():
     time.sleep(2) # so we don't start reading data till there is some in
                   # the UART buffer
 
-    #numTimesToAsk = 0
+    # State controlled by button1              
     global systemState
     systemState = 0
 
+    # Terminates main if true, on button2 
     global terminateMainTimeout
     terminateMainTimeout = False
-    global killMain
-    killMain = False
-    
+
+    # logging to a logfile if true
     global logging
     logging = False
 
+    # Count how many times button2 is pressed
     global button2pressed
     button2pressed = 0
 
