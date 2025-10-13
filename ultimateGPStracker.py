@@ -122,6 +122,7 @@ def logging2pico():
             # last line might never make it to the flash.
             fileApicoFlash.flush()
             time.sleep(0.1)  # sleep 0.1 seconds, 10th of a second, 100ms
+            #time.sleep(30)
             
             #print("dbg: logging2pico: Appended Line is=", appendLineCSVstrLine)
 
@@ -1345,10 +1346,12 @@ def main():
                     latitudeCur, longitudeCur = logging2pico()
 
                     displayOLEDlogging(latitudeCur, longitudeCur)
+                    
 
                     print("On Pico, LOGGING Latitude & Longitude to"
                           " ultimateGPStracker.log ")
 
+                    #time.sleep(10)
                     # only makes sence to go back to first screen
                     # after you have finished logging data
                     systemState = 0                    

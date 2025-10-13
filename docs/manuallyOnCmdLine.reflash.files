@@ -23,6 +23,8 @@ pip install mpremote
 wget https://datasheets.raspberrypi.com/soft/flash_nuke.uf2
 
 with boot sel pressed plug in usb cable
+OR
+mpremote connect /dev/ttyACM0 bootloader
 cp flash_nuke.uf2 /media/smagri/RP2350/
 cp mp_firmware_unofficial_latest.uf2 /media/smagri/RP2350/
 mpremote connect /dev/ttyACM0 fs ls 

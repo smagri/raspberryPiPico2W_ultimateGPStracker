@@ -122,6 +122,7 @@ def logging2pico():
             # last line might never make it to the flash.
             fileApicoFlash.flush()
             time.sleep(0.1)  # sleep 0.1 seconds, 10th of a second, 100ms
+            #time.sleep(30)
             
             #print("dbg: logging2pico: Appended Line is=", appendLineCSVstrLine)
 
@@ -778,23 +779,29 @@ def displayOLEDterminateMain():
 
     # You press button2 within timout seconds after powering the pico
     # to terminate main.py.
-    global terminateMain
-    terminateTimout = 5
-    terminateStartTime = time.time() # current time
+    global terminateMainTimeout
+    global logging
+    global killMain
+    
+    timeoutTime = 5 # 5 seconds
+    timeoutStartTime = time.time() # current time
+    #timeoutCountdown = timeoutTime
 
-    while (time.time() - terminateStartTime) < terminateTimout:
+    while (time.time() - timeoutStartTime) < timeoutTime:
         display.fill(0)
         display.text("Press Button2", 0, 16)
         display.text("to KILL main.py, ", 0, 24)
-        display.text("u have 5s", 0, 30)
+        display.text("u have 5s:", 0, 30)
+        #display.text(str(timeoutCountdown), 96, 30)
         display.show()
-        terminateMain = False
-        button2value = button2.value()
-        if button2value == 0:
-            # button2 has been pressed when terminating main.py is
-            # displayed on OLED.
-            display.fill(0)
-            display.text("KILLING main.py...", 0, 0)
+        terminateMainTimeout = False
+        #timeoutCountdown -= 1
+
+
+        if button2pressed == 2:
+            print("dbg: displayOLEDterminateMain: button2pressed", button2pressed)
+            display.text("KILLING main.py...", 0, 44)
+            display.show()
             time.sleep(1) # show user Terminating for just 1 second
             display.fill(0)
             display.show()
@@ -805,10 +812,14 @@ def displayOLEDterminateMain():
 
             # So we need this code, then we really have killed main.py
             # and stopped resetting of the pico.
-            #x = 0
-            #y = x/0
-            terminateMain = True
-            return terminateMain
+            x = 0
+            y = x/0
+        
+        #     terminateMain = True
+        #     logging = True
+    #logging = True        
+    terminateMainTimeout = True       
+    return terminateMainTimeout
         
         
 
@@ -985,6 +996,11 @@ def button2irq(pin):
     global button2up, button2down
     global button2old # previous state of button
     global logging
+    global terminateMainTimeout
+    global killMain
+    global button2pressed
+    
+    
     button2value = button2.value() # member function of button2 object
     #print("dbg: button2irq: button2value=", button2value)
 
@@ -1005,11 +1021,16 @@ def button2irq(pin):
         # This is atomic for simple assignments like booleans in
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
+        #logging = not logging
         logging = not logging
         #print('dbg: button2irq: Button Two Triggered')
         #print("dbg: logging=", logging)
+
+        button2pressed += 1
+
     button2old=button2value
-   
+    
+
 
 
 ###############################################################################
@@ -1231,10 +1252,16 @@ def main():
     global systemState
     systemState = 0
 
-    global terminateMain
-    terminateMain = False
+    global terminateMainTimeout
+    terminateMainTimeout = False
+    global killMain
+    killMain = False
+    
     global logging
     logging = False
+
+    global button2pressed
+    button2pressed = 0
 
 
     try:
@@ -1298,27 +1325,33 @@ def main():
                         print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
                               str(GPSdata['headingP1P2']) + " deg")
                         #heading = None
-                elif not terminateMain:
+
+                elif not terminateMainTimeout:
                     # Handle  button2 events.   That is  start logging
                     # stage or terminate main.py.   You have 5 seconds
                     # seconds to  terminate main.py otherwise  we move
                     # on to the logging stage.
-                    
+
                     # Firstly determine if you want to kill main.py,
                     # otherwise go into the logging stage.
-                    terminateMain = displayOLEDterminateMain()
-                    
+                    terminateMainTimeout = displayOLEDterminateMain()
+                    print("dbg: main: terminateMainTimeout=", terminateMainTimeout)
+
                 else:
+                        
                     # You  have chosen  to go  into the  logging stage
                     # where  you  log  latitude  and  longatude  to  a
                     # logfile on the pico.
+                    print("dbg: main: logging=", logging)
                     latitudeCur, longitudeCur = logging2pico()
 
                     displayOLEDlogging(latitudeCur, longitudeCur)
+                    
 
                     print("On Pico, LOGGING Latitude & Longitude to"
                           " ultimateGPStracker.log ")
 
+                    #time.sleep(10)
                     # only makes sence to go back to first screen
                     # after you have finished logging data
                     systemState = 0                    

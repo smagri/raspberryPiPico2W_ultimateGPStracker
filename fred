@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+  <Document>
+    <name>GPS device</name>
+    <snippet>Created Sun Oct 12 02:54:03 2025 GMT</snippet>
+    <LookAt>
+      <longitude>150.969300</longitude>
+      <latitude>-33.776540</latitude>
+      <range>1300.000000</range>
+    </LookAt>
+    <!-- Normal waypoint style -->
+    <Style id="waypoint_n">
+      <IconStyle>
+        <Icon>
+          <href>https://maps.google.com/mapfiles/kml/pal4/icon61.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    <!-- Highlighted waypoint style -->
+    <Style id="waypoint_h">
+      <IconStyle>
+        <scale>1.2</scale>
+        <Icon>
+          <href>https://maps.google.com/mapfiles/kml/pal4/icon61.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    <StyleMap id="waypoint">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#waypoint_n</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#waypoint_h</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Folder>
+      <name>Waypoints</name>
+      <Placemark>
+        <name>WPT001</name>
+        <styleUrl>#waypoint</styleUrl>
+        <Point>
+          <coordinates>150.969300,-33.776540</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>WPT002</name>
+        <styleUrl>#waypoint</styleUrl>
+        <Point>
+          <coordinates>150.969300,-33.776540</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <name>WPT003</name>
+        <styleUrl>#waypoint</styleUrl>
+        <Point>
+          <coordinates>150.969300,-33.776540</coordinates>
+        </Point>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>

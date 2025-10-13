@@ -387,3 +387,24 @@ input to google earth.
 
 Use gpsvisualizer:
 Goto: https://www.gpsvisualizer.com/map_input?form=googleearth
+
+OR
+
+sudo apt install gpsbabel
+sudo apt install gpsbabelfe
+select comma seperated variable input
+select google earth variable output
+gpsbabel -i csv -f ultimateGPStracker.log.OnPC.log -o kml -F output.kml
+
+When mpromete get stuck
+kill main
+mpremote connect /dev/ttyACM0 
+>>> import os
+>>> os.listdir(".") 
+['main.py', 'ssd1306.py', 'ultimateGPStracker.log']
+>>> os.remove('main.py')
+>>> os.listdir(".") 
+['ssd1306.py', 'ultimateGPStracker.log']
+>>> 
+unplug and replug in the usb cable - hard reboot
+mpremote connect /dev/ttyACM0 fs cp main.py :
