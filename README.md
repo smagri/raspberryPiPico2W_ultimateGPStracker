@@ -401,9 +401,11 @@ read       this       logfile        to       the       PC       using
 xfer.ultimateGPStracker.log.Pico2PC.py.   However,  somtimes you  will
 get blank  lines in your PC  logfile, ultimateGPStracker.log.OnPC.log.
 I'm  not  sure  why  this  is so  yet,  needs  further  investigation.
-However, if you unplug the pico  and replug after you have created the
-logfile  on it,  xfer.ultimateGPStracker.log.Pico2PC.py will  transfer
-the logfile to the PC correctly.
+If you have main.py running at all you will not be able to do the xfer
+of the  logfile on the pico  to the PC as  the pico is talking  on the
+serial port still.  So you must  somehow kill main.py and then run the
+xfer script, xfer.ultimateGPStracker.log.Pico2PC.py. To do this, after
+the system boots from a hard reboot press button2 to kill main.
 
 The  problem turned  out that  the python  program with  prints in  it
 worked and without prints it did not work.  I managed to work out that

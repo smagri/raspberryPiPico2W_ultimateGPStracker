@@ -779,22 +779,49 @@ def displayOLEDterminateMain():
     # to terminate main.py.
     global terminateMainTimeout
     global logging
-
     
-    timeoutTime = 5 # 5 seconds
-    timeoutStartTime = time.time() # current time
-    #timeoutCountdown = timeoutTime
+    timeoutTime = 5  # 5 seconds
+    timeoutStartTime = time.time()  # current time
+    timeoutCountdown = timeoutTime
+    prevElapsedSeconds = 0
 
-    # While loop executes many times till timeoutTime seconds have elapsed.
+    # While loop executes many times till timeoutTime seconds have
+    # elapsed.  Essentially it blocks for timeoutTime seconds.
     while (time.time() - timeoutStartTime) < timeoutTime:
-        display.fill(0)
-        display.text("Press Button2", 0, 16)
-        display.text("to KILL main.py, ", 0, 24)
-        display.text("u have 5s:", 0, 30)
-        #display.text(str(timeoutCountdown), 96, 30)
-        display.show()
-        terminateMainTimeout = False
-        #timeoutCountdown -= 1
+
+        time.sleep(0.05)  # small delay to reduce CPU usage
+
+        # Round down the difference to whole numbers.  time.time()
+        # returns a floating point number.
+        elapsedSeconds = int(time.time() - timeoutStartTime)
+        # print("dbg: displayOLEDterminateMain: prevElapsedSeconds=",
+        #       prevElapsedSeconds)
+        # print("dbg: displayOLEDterminateMain: elapsedSeconds=",
+        #       elapsedSeconds)
+        # print("dbg: displayOLEDterminateMain: timoutCountdown=",
+        #       timeoutCountdown)
+
+        if timeoutCountdown == 5:
+            display.fill(0)
+            display.text("Press Button2", 0, 16)
+            display.text("to KILL main.py, ", 0, 24)
+            display.text("u have 5s:", 0, 30)
+            display.text(str(timeoutCountdown), 96, 30)
+            display.show()
+        
+        if elapsedSeconds != prevElapsedSeconds:
+            # another second has passed
+            #print("dbg: displayOLEDterminateMain: another second has passed")
+            timeoutCountdown -= 1
+            display.fill(0)
+            display.text("Press Button2", 0, 16)
+            display.text("to KILL main.py, ", 0, 24)
+            display.text("u have 5s:", 0, 30)
+            display.text(str(timeoutCountdown), 96, 30)
+            display.show()
+            terminateMainTimeout = False
+            prevElapsedSeconds = elapsedSeconds
+        
 
         # However,  if  button2  is  pressed  before  the  timeoutTime
         # seconds  are  up main.py  is  killed.   Otherwise after  the
