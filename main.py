@@ -756,10 +756,10 @@ def displayOLEDlogging(curLatitude, curLongitude):
 
     display.fill(0)
     display.text("Logging...", 0, 0)
-    display.text("Lat:" + str(curLatitude), 0, 16)
-    display.text("Long:" + str(curLongitude), 0, 24)
-    display.text("Press Button2 ", 0, 32)
-    display.text("to turn OFF.", 0, 40)
+    display.text("Lat:" + str(curLatitude), 0, 24)
+    display.text("Long:" + str(curLongitude), 0, 32)
+    display.text("Press Button2 ", 0, 48)
+    display.text("to turn OFF.", 0, 56)
     display.show()
 
 
@@ -779,24 +779,49 @@ def displayOLEDterminateMain():
     # to terminate main.py.
     global terminateMainTimeout
     global logging
-
-    # TODO: remove from final program
-    global killMain
     
-    timeoutTime = 5 # 5 seconds
-    timeoutStartTime = time.time() # current time
-    #timeoutCountdown = timeoutTime
+    timeoutTime = 5  # 5 seconds
+    timeoutStartTime = time.time()  # current time
+    timeoutCountdown = timeoutTime
+    prevElapsedSeconds = 0
 
-    # While loop executes many times till timeoutTime seconds have elapsed.
+    # While loop executes many times till timeoutTime seconds have
+    # elapsed.  Essentially it blocks for timeoutTime seconds.
     while (time.time() - timeoutStartTime) < timeoutTime:
-        display.fill(0)
-        display.text("Press Button2", 0, 16)
-        display.text("to KILL main.py, ", 0, 24)
-        display.text("u have 5s:", 0, 30)
-        #display.text(str(timeoutCountdown), 96, 30)
-        display.show()
-        terminateMainTimeout = False
-        #timeoutCountdown -= 1
+
+        time.sleep(0.05)  # small delay to reduce CPU usage
+
+        # Round down the difference to whole numbers.  time.time()
+        # returns a floating point number.
+        elapsedSeconds = int(time.time() - timeoutStartTime)
+        # print("dbg: displayOLEDterminateMain: prevElapsedSeconds=",
+        #       prevElapsedSeconds)
+        # print("dbg: displayOLEDterminateMain: elapsedSeconds=",
+        #       elapsedSeconds)
+        # print("dbg: displayOLEDterminateMain: timoutCountdown=",
+        #       timeoutCountdown)
+
+        if timeoutCountdown == 5:
+            display.fill(0)
+            display.text("Press Button2", 0, 16)
+            display.text("to KILL main.py, ", 0, 24)
+            display.text("u have 5s:", 0, 30)
+            display.text(str(timeoutCountdown), 96, 30)
+            display.show()
+        
+        if elapsedSeconds != prevElapsedSeconds:
+            # another second has passed
+            #print("dbg: displayOLEDterminateMain: another second has passed")
+            timeoutCountdown -= 1
+            display.fill(0)
+            display.text("Press Button2", 0, 16)
+            display.text("to KILL main.py, ", 0, 24)
+            display.text("u have 5s:", 0, 30)
+            display.text(str(timeoutCountdown), 96, 30)
+            display.show()
+            terminateMainTimeout = False
+            prevElapsedSeconds = elapsedSeconds
+        
 
         # However,  if  button2  is  pressed  before  the  timeoutTime
         # seconds  are  up main.py  is  killed.   Otherwise after  the
@@ -1270,18 +1295,19 @@ def main():
     time.sleep(2) # so we don't start reading data till there is some in
                   # the UART buffer
 
-    #numTimesToAsk = 0
+    # State controlled by button1              
     global systemState
     systemState = 0
 
+    # Terminates main if true, on button2 
     global terminateMainTimeout
     terminateMainTimeout = False
-    global killMain
-    killMain = False
-    
+
+    # logging to a logfile if true
     global logging
     logging = False
 
+    # Count how many times button2 is pressed
     global button2pressed
     button2pressed = 0
 
@@ -1381,8 +1407,8 @@ def main():
                     
                     
 
-            # stops the loop from hogging the cpu as the sleep yeilds
-            # to other processed.
+            # Stops the loop from hogging the cpu as the sleep yeilds
+            # to other processes..
             print()
             time.sleep(1)
 
