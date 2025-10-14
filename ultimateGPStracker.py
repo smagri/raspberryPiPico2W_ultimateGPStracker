@@ -60,7 +60,10 @@
 # Pixel  Screen IIC  Serial Mini  Self-Luminous Board  Compatible With
 # Arduino Raspberry  PI (Blue and Yellow).   On the back of  the board
 # there is  an address selector, in  this case a resistor  for address
-# 0x3C.  However, it can be configured for address 0x30 also.
+# 0x3C.  However,  it can be  configured for address 0x30  also.  Note
+# that each  character displayed on  the screen  is 8 pixels  wide and
+# high.   That means  you can  display upto  16 charachters  along the
+# screen and 8 lines down the screen.
 
 # circuit diagram https://toptechboy.com/wp-content/uploads/2025/06/gps-OLED.jpg
 #
@@ -778,7 +781,6 @@ def displayOLEDterminateMain():
     # You press button2 within timout seconds after powering the pico
     # to terminate main.py.
     global terminateMainTimeout
-    global logging
     
     timeoutTime = 5  # 5 seconds
     timeoutStartTime = time.time()  # current time
@@ -819,7 +821,6 @@ def displayOLEDterminateMain():
             display.text("u have 5s:", 0, 30)
             display.text(str(timeoutCountdown), 96, 30)
             display.show()
-            terminateMainTimeout = False
             prevElapsedSeconds = elapsedSeconds
         
 
@@ -829,7 +830,7 @@ def displayOLEDterminateMain():
         # been pressed once.  pressed once.
         if button2pressed == 2:
             #print("dbg: displayOLEDterminateMain: button2pressed", button2pressed)
-            display.text("KILLING main.py...", 0, 44)
+            display.text("KILLING main.py", 0, 44)
             display.show()
             time.sleep(1) # show user Terminating for just 1 second
             display.fill(0)
@@ -841,8 +842,9 @@ def displayOLEDterminateMain():
 
             # So we need this code, then we really have killed main.py
             # and stopped resetting of the pico.
-            x = 0
-            y = x/0
+            #x = 0
+            #y = 1/x
+            raise RuntimeError("Terminating main.py")
         
     # Indicate  to  main() program  loop  that  timoutTime passed  and
     # button2 has only been pressed  once, hence we will enter logging
@@ -1280,7 +1282,8 @@ def main():
     global button2down
     button2down = 0# button goes up to down
     global button2old
-    button2old = 1 # last time through the loop the buttion was up
+    button2old = 1 # last time through the irq the buttion was up
+
     global logging # start logging=True, or stop logging=False
     logging = False
     
@@ -1299,15 +1302,11 @@ def main():
     global systemState
     systemState = 0
 
-    # Terminates main if true, on button2 
+    # Terminates main.py if true, on button2 
     global terminateMainTimeout
     terminateMainTimeout = False
 
-    # logging to a logfile if true
-    global logging
-    logging = False
-
-    # Count how many times button2 is pressed
+        # Count how many times button2 is pressed
     global button2pressed
     button2pressed = 0
 

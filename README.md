@@ -47,6 +47,18 @@ https://amzn.to/4kggv86
 
 
 
+Hard boot of raspberry pi pico 2
+--------------------------------
+
+Hard boot, all hardware is reset:
+
+Connect pin30==RUN momentarily to ground.  Any main.py in flash memory
+starts executing immediately.
+
+Or plug and unplug the USB cable.
+
+
+
 Programming the raspberry Pi Pico 2:
 -----------------------------------
 

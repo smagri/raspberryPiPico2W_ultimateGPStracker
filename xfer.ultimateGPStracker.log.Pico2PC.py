@@ -4,6 +4,13 @@
 # Python command line program to xfer logfiles/files flashed to the
 # Pico W to PC.
 
+# To be able to run this file  you must have sole access to the serial
+# port.   Thus you  have to  kill main.py  on the  pico and  make sure
+# thonny is  not connected to  the pico  also.  Connect thonny  to the
+# python interpreter  to run the  script. Or  kill thonny and  run the
+# script on  the command line.   Note the  first line of  this program
+# allows you to run the script on the command line.
+
 import serial
 import time
 
