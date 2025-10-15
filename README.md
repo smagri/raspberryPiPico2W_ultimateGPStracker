@@ -463,3 +463,7 @@ talking only to the Pico’s filesystem.
 
 * do an mpremote command:
   mpremote connect /dev/ttyACM0 fs cp main.py :
+
+
+xfer.ultimateGPStracker.log.Pico2PC.py sometimes need to be run twice
+before it xfers the logfile.
