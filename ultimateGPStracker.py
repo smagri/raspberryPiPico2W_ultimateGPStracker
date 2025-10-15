@@ -1306,9 +1306,13 @@ def main():
     global terminateMainTimeout
     terminateMainTimeout = False
 
-        # Count how many times button2 is pressed
+    # Count how many times button2 is pressed
     global button2pressed
     button2pressed = 0
+
+    # Determines whether we have just started logging or not
+    global startLoggingTime
+    startLoggingTime = False
 
 
     try:
@@ -1331,6 +1335,9 @@ def main():
                 # we have a fix
 
                 if not logging:
+
+                    # rest time for logging 
+                    startLoggingTime = False
 
                     # NOTE, the  more sattilites we  get for our fix  the more
                     # accurate the  position, ie latitude and  longitude.  You
@@ -1389,17 +1396,42 @@ def main():
                         
                     # You  have chosen  to go  into the  logging stage
                     # where  you  log  latitude  and  longatude  to  a
-                    # logfile on the pico.
-                    
-                    print("dbg: main: logging=", logging)
-                    latitudeCur, longitudeCur = logging2pico()
+                    # logfile   on   the   pico.    Only   log   every
+                    # loggingInterval  seconds.   We don't  sleep  for
+                    # loggingInterval seconds  because we want  to log
+                    # values at  the interval  more precisely  and not
+                    # leave it up to the scheduler.
 
-                    displayOLEDlogging(latitudeCur, longitudeCur)
-                    
+                    loggingInterval = 5  # log only every 5 seconds
 
-                    print("On Pico, LOGGING Latitude & Longitude to"
-                          " ultimateGPStracker.log ")
+                    if not startLoggingTime:
+                        # Log initial latitude and longitude values as
+                        # we want to display the logging display
+                        # straight after the first five seconds.
+                        startLoggingTime = time.time()
+                        print("dbg: main: Initialising startLoggingTime")
+                        print("dbg: main: logging=", logging)
+                        latitudeCur, longitudeCur = logging2pico()
+                        displayOLEDlogging(latitudeCur, longitudeCur)
+                        print("On Pico, LOGGING Latitude & Longitude to"
+                              " ultimateGPStracker.log ")
+                        # We have started logging.
+                        startLoggingTime = True
 
+                    # Follwoing initial value log only every
+                    # loggingInterval seconds.
+                    if time.time()-startLoggingTime > loggingInterval:
+                        print("dbg: main: logging=", logging)
+                        latitudeCur, longitudeCur = logging2pico()
+
+                        displayOLEDlogging(latitudeCur, longitudeCur)
+
+                        print("On Pico, LOGGING Latitude & Longitude to"
+                              " ultimateGPStracker.log ")
+
+                        # reset when you last logged data
+                        startLoggingTime = time.time()
+                        
                     # only makes sence to go back to first screen
                     # after you have finished logging data
                     systemState = 0                    
@@ -1408,7 +1440,7 @@ def main():
 
             # Stops the loop from hogging the cpu as the sleep yeilds
             # to other processes..
-            print()
+            print("Sleeping one second")
             time.sleep(1)
 
             # NOTE: this does not overflow the buffer as readGPSdata()
