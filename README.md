@@ -258,17 +258,48 @@ reset).
 
 
 
-Thonny hanging on File->Save As main.py and mpremote hanging, see
+Thonny hanging on File->Save As main.py and mpremote hanging.
 -----------------------------------------------------------------
-other option for mpremote hangging below
------------------------------------------------------------------
+
 
 So I  tried to  flash main.py  via thonny File->Save  As and  it hung.
 Tried to kill main.py with mpremote and it hung also.  Consequently, I
 had to  execute the following  commands on  the command line  to flash
 main.py into the raspberry pi pico 2 w:
 
-Firstly, you will need these:
+	Firstly Try, you can also use this to REMOVE ANY FILE FROM THE PICO:
+	-------------------------------------------------------------------
+
+* kill main with button2
+
+* to get the python prompt and just connect to the serial port.
+mpremote connect /dev/ttyACM0 
+
+* NOTE: sometimes you need to press return to get the >>> REPL prompt.
+
+>>> import os
+>>> os.listdir(".") 
+['main.py', 'ssd1306.py', 'ultimateGPStracker.log']
+>>> os.remove('main.py')
+>>> os.listdir(".") 
+['ssd1306.py', 'ultimateGPStracker.log']
+>>> 
+
+NOTE:
+Once you’re inside the MicroPython REPL (the >>> prompt on your Pico),
+you’re  no  longer talking  to  your  computer’s filesystem  —  you’re
+talking only to the Pico’s filesystem.
+
+* unplug and replug in the usb cable - hard reboot
+
+* do an mpremote command:
+  mpremote connect /dev/ttyACM0 fs cp main.py :
+  
+  
+		Secondly Try:
+		-------------
+	
+You will need these:
 * pip install mpremote
 * wget https://datasheets.raspberrypi.com/soft/flash_nuke.uf2
 
@@ -439,13 +470,18 @@ However, gpsbabelfe seems not as intuative as gpsvisualizer.
 
 
 
-When mpremote gets stuck, or xfer.ultimateGPStracker.log.Pico2PC.py hangs:
+When mpremote gets stuck, or xfer.ultimateGPStracker.log.Pico2PC.py hangs,
 -------------------------------------------------------------------------
+or removing a file from the pico:
+---------------------------------
 
 * kill main with button2
 
 * to get the python prompt and just connect to the serial port.
 mpremote connect /dev/ttyACM0 
+
+* NOTE: sometimes you need to press return to get the >>> REPL prompt.
+
 >>> import os
 >>> os.listdir(".") 
 ['main.py', 'ssd1306.py', 'ultimateGPStracker.log']
@@ -466,4 +502,4 @@ talking only to the Pico’s filesystem.
 
 
 xfer.ultimateGPStracker.log.Pico2PC.py sometimes need to be run twice
-before it xfers the logfile.
+before it xfers the logfile, if it has hung.
