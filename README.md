@@ -236,10 +236,8 @@ Power Up using Bread Volt
 
 
 
-Thonny hanging on File->Save As main.py and bug with hard reboot of
--------------------------------------------------------------------
-system and using the Sunfounder Bread Volt.
--------------------------------------------------------------------
+Resetting raspberry pi pico
+---------------------------
 
 Firstly, my  rasberry pi  pico 2 w  is plugged into  the USB  port, no
 Bread Volt  attached.  Note it  is a pico  2 w not  a pico w.   A hard
@@ -260,22 +258,15 @@ reset).
 
 
 
-Then I  started thonny, which does  a soft reboot of  the raspberry pi
-pico 2  w on startup,  and so my code  worked. A soft  reboot restarts
-micropython without resetting the entire board hardware.  Your main.py
-will run again.
+Thonny hanging on File->Save As main.py and mpremote hanging, see
+-----------------------------------------------------------------
+other option for mpremote hangging below
+-----------------------------------------------------------------
 
-Ways to do it:
-
-In the REPL, press Ctrl+D — this performs a soft reboot.
-
-From code, call sys.exit() (then MicroPython restarts when you reconnect).
-
-
-
-So I tried to flash main.py via thonny File->Save As and it hung.
-Consequently, I had  to execute the following commands  on the command
-line to flash main.py into the raspberry pi pico 2 w:
+So I  tried to  flash main.py  via thonny File->Save  As and  it hung.
+Tried to kill main.py with mpremote and it hung also.  Consequently, I
+had to  execute the following  commands on  the command line  to flash
+main.py into the raspberry pi pico 2 w:
 
 Firstly, you will need these:
 * pip install mpremote
@@ -283,8 +274,10 @@ Firstly, you will need these:
 
 * With boot sel pressed plug in usb cable.
 * OR 
-* Put the pico in bootloader mode, that is, now RP2350,that is pico
-  will appear as a drive on your PC and you can copy things to it.
+* Put the pico in bootloader mode, mpremote connect /dev/ttyACM0 bootloader
+
+  Now RP2350,that is pico will appear as a drive on your PC and you
+  can copy things to it.
   
 * cp flash_nuke.uf2 /media/.../RP2350/ ,to clear mycropython from pico
 * cp mp_firmware_unofficial_latest.uf2 /media/.../RP2350/ ,to copy
@@ -446,8 +439,8 @@ However, gpsbabelfe seems not as intuative as gpsvisualizer.
 
 
 
-When mpremote gets stuck:
-------------------------
+When mpremote gets stuck, or xfer.ultimateGPStracker.log.Pico2PC.py hangs:
+-------------------------------------------------------------------------
 
 * kill main with button2
 
@@ -460,6 +453,11 @@ mpremote connect /dev/ttyACM0
 >>> os.listdir(".") 
 ['ssd1306.py', 'ultimateGPStracker.log']
 >>> 
+
+NOTE:
+Once you’re inside the MicroPython REPL (the >>> prompt on your Pico),
+you’re  no  longer talking  to  your  computer’s filesystem  —  you’re
+talking only to the Pico’s filesystem.
 
 * unplug and replug in the usb cable - hard reboot
 

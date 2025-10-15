@@ -844,7 +844,7 @@ def displayOLEDterminateMain():
             # and stopped resetting of the pico.
             #x = 0
             #y = 1/x
-            raise RuntimeError("Terminating main.py")
+            raise RuntimeError("killing main.py")
         
     # Indicate  to  main() program  loop  that  timoutTime passed  and
     # button2 has only been pressed  once, hence we will enter logging
@@ -1310,9 +1310,10 @@ def main():
     global button2pressed
     button2pressed = 0
 
-    # Determines whether we have just started logging or not
+    # Determines whether we will start logging when button2 is
+    # pressed.
     global startLoggingTime
-    startLoggingTime = False
+    startLoggingTime = 0
 
 
     try:
@@ -1337,7 +1338,7 @@ def main():
                 if not logging:
 
                     # rest time for logging 
-                    startLoggingTime = False
+                    startLoggingTime = 0
 
                     # NOTE, the  more sattilites we  get for our fix  the more
                     # accurate the  position, ie latitude and  longitude.  You
@@ -1409,19 +1410,19 @@ def main():
                         # we want to display the logging display
                         # straight after the first five seconds.
                         startLoggingTime = time.time()
-                        print("dbg: main: Initialising startLoggingTime")
-                        print("dbg: main: logging=", logging)
+                        #print("dbg: main: Initialising startLoggingTime")
+                        #print("dbg: main: logging=", logging)
                         latitudeCur, longitudeCur = logging2pico()
                         displayOLEDlogging(latitudeCur, longitudeCur)
                         print("On Pico, LOGGING Latitude & Longitude to"
                               " ultimateGPStracker.log ")
-                        # We have started logging.
-                        startLoggingTime = True
+                        # Reset for next logging period
+                        #startLoggingTime = False
 
                     # Follwoing initial value log only every
                     # loggingInterval seconds.
                     if time.time()-startLoggingTime > loggingInterval:
-                        print("dbg: main: logging=", logging)
+                        #print("dbg: main: logging=", logging)
                         latitudeCur, longitudeCur = logging2pico()
 
                         displayOLEDlogging(latitudeCur, longitudeCur)
@@ -1438,9 +1439,9 @@ def main():
                     
                     
 
-            # Stops the loop from hogging the cpu as the sleep yeilds
+            # Stops the while loop from hogging the cpu as the sleep yeilds
             # to other processes..
-            print("Sleeping one second")
+            print("Sleeping one second...")
             time.sleep(1)
 
             # NOTE: this does not overflow the buffer as readGPSdata()
