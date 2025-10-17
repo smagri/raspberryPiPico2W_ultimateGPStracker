@@ -1,0 +1,5 @@
+Rejected
+I used:  raise RuntimeError("killing main.py") instead of divide by 0.  It works fine.
+
+Works:
+I used:  raise RuntimeError("Terminating") instead of divide by 0.  It works fine.

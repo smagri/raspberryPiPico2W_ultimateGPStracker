@@ -267,8 +267,15 @@ Tried to kill main.py with mpremote and it hung also.  Consequently, I
 had to  execute the following  commands on  the command line  to flash
 main.py into the raspberry pi pico 2 w:
 
-	Firstly Try, you can also use this to REMOVE ANY FILE FROM THE PICO:
-	-------------------------------------------------------------------
+	Firstly Try to run this file and try again:
+	-------------------------------------------
+	* kill main with button2
+	* ~smagri/bin/flush.mycropython.buffers
+
+
+	Secondly now try ~smagri/bin/mpremote.sjm instead of mpremote here:
+	(you can also use this to REMOVE ANY FILE FROM THE PICO):
+	-------------------------------------------------------------------------------
 
 * kill main with button2
 
@@ -285,19 +292,23 @@ mpremote connect /dev/ttyACM0
 ['ssd1306.py', 'ultimateGPStracker.log']
 >>> 
 
+*  Or Press the RESET button on the board. ie RUN pin30 to ground
+   momenterily, to get out of >>> ie REPL mode.
+
 NOTE:
 Once you’re inside the MicroPython REPL (the >>> prompt on your Pico),
 you’re  no  longer talking  to  your  computer’s filesystem  —  you’re
 talking only to the Pico’s filesystem.
 
-* unplug and replug in the usb cable - hard reboot
+* unplug and replug in the usb cable - hard reboot.  Or Press the
+  RESET button on the board. ie RUN pin30 to ground momenterily.
 
 * do an mpremote command:
   mpremote connect /dev/ttyACM0 fs cp main.py :
   
   
-		Secondly Try:
-		-------------
+	Thirdly Try:
+	------------
 	
 You will need these:
 * pip install mpremote
@@ -470,36 +481,26 @@ However, gpsbabelfe seems not as intuative as gpsvisualizer.
 
 
 
-When mpremote gets stuck, or xfer.ultimateGPStracker.log.Pico2PC.py hangs,
--------------------------------------------------------------------------
-or removing a file from the pico:
----------------------------------
+xfer.ultimateGPStracker.log.Pico2PC.py hangs:
+--------------------------------------------
 
-* kill main with button2
+* make sure nothing is already controlling the serial port, like
+  thonny or mpremote commandline tools.  Kill them both.
 
-* to get the python prompt and just connect to the serial port.
-mpremote connect /dev/ttyACM0 
+* kill main.py with the kill switch on button2
 
-* NOTE: sometimes you need to press return to get the >>> REPL prompt.
+* run ~smagri/bin/flush.mycropython.buffers
 
->>> import os
->>> os.listdir(".") 
-['main.py', 'ssd1306.py', 'ultimateGPStracker.log']
->>> os.remove('main.py')
->>> os.listdir(".") 
-['ssd1306.py', 'ultimateGPStracker.log']
->>> 
-
-NOTE:
-Once you’re inside the MicroPython REPL (the >>> prompt on your Pico),
-you’re  no  longer talking  to  your  computer’s filesystem  —  you’re
-talking only to the Pico’s filesystem.
-
-* unplug and replug in the usb cable - hard reboot
-
-* do an mpremote command:
-  mpremote connect /dev/ttyACM0 fs cp main.py :
+* xfer.ultimateGPStracker.log.Pico2PC.py sometimes need to be run twice
+  before it xfers the logfile, if it has hung.
 
 
-xfer.ultimateGPStracker.log.Pico2PC.py sometimes need to be run twice
-before it xfers the logfile, if it has hung.
+		However, the real issue is that there isn't a little sleep after
+		a serial object member function command.  I don't really know
+		why this works, possibly some micropython bug.  Hence run:
+		
+		xfer.ultimateGPStracker.log.Pico2PC.withComments.py
+		OR
+		xfer.ultimateGPStracker.log.Pico2PC.withSleeps.py
+		INSTEAD OF
+		xfer.ultimateGPStracker.log.Pico2PC.py

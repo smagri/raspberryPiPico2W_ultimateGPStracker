@@ -4,6 +4,10 @@
 # Python command line program to xfer logfiles/files flashed to the
 # Pico W to PC.
 
+# This  file sleeps  after  serial object  commands this  consistantly
+# makes the script work.  While xfer.ultimateGPStracker.log.Pico2PC.py
+# hangs.
+
 # To be able to run this file  you must have sole access to the serial
 # port.   Thus you  have to  kill main.py  on the  pico and  make sure
 # thonny is  not connected to  the pico  also.  Connect thonny  to the
@@ -13,6 +17,7 @@
 
 import serial
 import time
+import sys
 
 
 serialPort= "/dev/ttyACM0"
@@ -26,14 +31,27 @@ baudRate = 115200 # for the pico it dosen't seem you can change this baudRate
 # serialObj  is  the  handle  for  our  serial  port.   For  instance,
 # readline() operation  will wait  at most 5  seconds for  data before
 # giving up.
-serialObj = serial.Serial(serialPort, baudRate, timeout=5)
+try:
+    serialObj = serial.Serial(serialPort, baudRate, timeout=5)
+except Exception as e:
+    sys.exit(f"Error opening port: {e}")   
 
-# To clear micropython buffers before the rest of my python script
+
+# To clear micropython UART buffer before the rest of my python script
 # runs.  Otherwise readline()'s were out of sink.
-serialObj.write(b"print(\"Input Buffer FLUSHED\")\r\n")
-serialObj.write(b"print(\"Output Buffer FLUSHED\")\r\n")
+
+# Fulsh the micropython UART buffer on the Pico W to PC.
+
+# To be able to run this file  you must have sole access to the serial
+# port.   Thus you  have to  kill main.py  on the  pico with  the kill
+# switch and  make sure thonny is  not connected to the  pico also, or
+# mpremote.  Killing main.py with the  kill switch I think still dumps
+# corrupted data into the buffers.
+serialObj.write(b"print(\"Input Buffer FLUSH\")\r\n")
+serialObj.write(b"print(\"Output Buffer FLUSH\")\r\n")
 while True:
     flushLine = serialObj.readline().decode("utf-8").strip()
+    print("Waiting for ready, flushLine=", flushLine)
     if flushLine == "Output Buffer FLUSH":
         print("Flushed UART,", flushLine)
         break
@@ -73,7 +91,7 @@ while True:
 # Computers  and microcontrollers  communicate  via  bytes not  python
 # string objects.
 serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
-
+time.sleep(0.1)
 
 # After  the pico  recived the  write() command  it returns/echos  the
 # command back to the PC, so we can read it in.
@@ -84,8 +102,8 @@ serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
 # .strip() removes and leading and trailing whitespace charcters from
 # the string, including \r\n
 picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
-#print(picoCmdResultLine)
-#time.sleep(1)
+#print("Write to open file succeeded echoed line is= ", picoCmdResultLine)
+time.sleep(1)
 
 # Reading from logfile logfile on the pico to logfile on the PC:
 
@@ -103,6 +121,7 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
         # command on the  pico.  The command is to read  the next line
         # in the logfile.
         serialObj.write(b"filePicoHandle.readline()\r\n")
+        time.sleep(0.1)
 
         # Read the echo of the readline() command.
 
@@ -119,7 +138,7 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             print("No echo recived from pico, timout hit. Breaking...")
             break
         ###print("Echo Line: ", echoLine)
-        # time.sleep(0.1)
+        time.sleep(0.1)
 
         # Read the lines of the pico logfile
         picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
@@ -127,7 +146,7 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             print("No data received from pico, timout hit. Breaking..")
             break
         ###print("Pico File line: ", picoCmdResultLine)
-        #time.sleep(0.1)
+        time.sleep(0.1)
         
         # Write what is  in the logfile on the pico into  the logfile on
         # the PC.
@@ -144,14 +163,15 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             # This removes the \, n, ' ie three characters.
             picoCmdResultLine = picoCmdResultLine[1:-3]
             # newline to have each line under the other instead of side by side
-            #print("Pico File line written to PC logfile=", picoCmdResultLine)
+            ###print("Pico File line written to PC logfile=", picoCmdResultLine)
             filePChandle.write(picoCmdResultLine + '\n')
-            #time.sleep(0.1)
+            time.sleep(0.1)
 
 # Close the log file on the pico
 serialObj.write(b"filePicoHandle.close()\r\n")
+time.sleep(0.1)
 
-# To clear micropython buffers for safety.
+# To clear micopython buffer for safety.
 serialObj.write(b"print(\"finished\")\r\n")
 while True:
     flushLine = serialObj.readline().decode("utf-8").strip()
@@ -161,3 +181,4 @@ while True:
 
 # close the serial port connection from the PC to the pico.
 serialObj.close()
+time.sleep(0.1)
