@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Path from Pico</name>
+    <Style id="pointStyle">
+      <IconStyle>
+        <Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
+        <scale>1.0</scale>
+      </IconStyle>
+    </Style>
+    <Style id="lineStyle">
+      <LineStyle><color>ff0000ff</color><width>3</width></LineStyle>
+    </Style>
+    <Placemark>
+      <styleUrl>#pointStyle</styleUrl>
+      <MultiGeometry>
+<Point><coordinates>
+150.9693,-33.77652
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77652
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77652
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77654
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77652
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.7765
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77649
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77652
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77652
+</coordinates></Point>
+<Point><coordinates>
+150.9692,-33.77655
+</coordinates></Point>
+<Point><coordinates>
+150.9692,-33.77655
+</coordinates></Point>
+<Point><coordinates>
+150.9692,-33.77654
+</coordinates></Point>
+<Point><coordinates>
+150.9692,-33.77654
+</coordinates></Point>
+<Point><coordinates>
+150.9692,-33.77654
+</coordinates></Point>
+<Point><coordinates>
+150.9692,-33.77654
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77655
+</coordinates></Point>
+<Point><coordinates>
+150.9693,-33.77656
+</coordinates></Point>
+</MultiGeometry>
+    </Placemark>
+    <Placemark>
+      <name>Path</name>
+      <styleUrl>#lineStyle</styleUrl>
+      <LineString>
+        <tessellate>1</tessellate>
+        <altitudeMode>clampToGround</altitudeMode>
+        <coordinates>
+        150.9693,-33.77652 
+150.9693,-33.77652 
+150.9693,-33.77652 
+150.9693,-33.77654 
+150.9693,-33.77652 
+150.9693,-33.7765 
+150.9693,-33.77649 
+150.9693,-33.77652 
+150.9693,-33.77652 
+150.9692,-33.77655 
+150.9692,-33.77655 
+150.9692,-33.77654 
+150.9692,-33.77654 
+150.9692,-33.77654 
+150.9692,-33.77654 
+150.9693,-33.77655 
+150.9693,-33.77656 
+
+        </coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>
