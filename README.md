@@ -292,6 +292,8 @@ mpremote connect /dev/ttyACM0
 ['ssd1306.py', 'ultimateGPStracker.log']
 >>> 
 
+*  Ctrl-X to get out of >>> REPL mode
+
 *  Or Press the RESET button on the board. ie RUN pin30 to ground
    momenterily, to get out of >>> ie REPL mode.
 
