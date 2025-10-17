@@ -5,7 +5,8 @@
 # Pico W  to PC.
 
 # This file prints messages after serial object commands, similar to a
-# sleep, this consistantly makes the script work.
+# sleep,   this   consistantly   makes   the   script   work.    While
+# xfer.ultimateGPStracker.log.Pico2PC.py hangs.
 
 # To be able to run this file  you must have sole access to the serial
 # port.   Thus you  have to  kill main.py  on the  pico and  make sure
