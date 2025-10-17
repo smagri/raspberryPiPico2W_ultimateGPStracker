@@ -197,7 +197,8 @@ time.sleep(0.1)
 #                     Convert PC cvs logfile to kml format.
 ###############################################################################
 
-
+# ### Triple quotes all you to write multiline strings.  Including
+# ### spaces, indentation and newlines.
 kml_header = """<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
@@ -231,6 +232,12 @@ with open(cvs_file, 'r', encoding='utf-8') as filePChandle:
 
         # splits the stirng in two parts at the , delimiter
         latitude, longitude = line.split(',')
+        
+        # f-strings(formatted string literal) lets you embed VARIABLES
+        # or expressions  directly inside  a string, using  {} braces.
+        # It automatically converts numbers  to strings.  Cleaner than
+        # using  plus sign  to concatinate  strings with  variables in
+        # them.
         kml_points += f"<Point><coordinates>\n{longitude},{latitude}\n</coordinates></Point>\n"
         coordinates_line += f"{longitude},{latitude} \n"
 
