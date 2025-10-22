@@ -23,6 +23,11 @@
 # script on  the command line.   Note the  first line of  this program
 # allows you to run the script on the command line.
 
+# NOTE: also  that a print()(just like  a small sleep) or  an explicit
+# small sleep like time.sleeo(0.1)(100ms)  seems to be reaquired after
+# each method for the serial  object, serialObj handle.  Otherwise the
+# program will hang after vaious commands.
+
 import serial
 import time
 import sys
@@ -41,6 +46,7 @@ baudRate = 115200 # for the pico it dosen't seem you can change this baudRate
 # giving up.
 try:
     serialObj = serial.Serial(serialPort, baudRate, timeout=5)
+    time.sleep(1)
 except serial.SerialException as e:
     sys.exit(f"Error opening port: {e}")
     
@@ -104,14 +110,14 @@ time.sleep(0.1)
 # After  the pico  recived the  write() command  it returns/echos  the
 # command back to the PC, so we can read it in.
 
-#.decode('utf-8') converts the bytes receive from serial into a string.
-# So, Latitude,Longitude becomes "Latitude,Longitude"???
+#.decode('utf-8') converts the bytes received from serial port into a
+# string.  So, Latitude,Longitude becomes "Latitude,Longitude"
 
 # .strip() removes and leading and trailing whitespace charcters from
 # the string, including \r\n
 picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
 #print("Write to open file succeeded echoed line is= ", picoCmdResultLine)
-time.sleep(1)
+time.sleep(0.1)
 
 # Reading from logfile logfile on the pico to logfile on the PC:
 
@@ -183,6 +189,7 @@ time.sleep(0.1)
 serialObj.write(b"print(\"FINISHED\")\r\n")
 while True:
     flushLine = serialObj.readline().decode("utf-8").strip()
+    print("Waiting for ready, flushLine=", flushLine)
     if flushLine == "FINISHED":
         print("Flushed UART,", flushLine)
         break
@@ -197,9 +204,19 @@ time.sleep(0.1)
 #                     Convert PC cvs logfile to kml format.
 ###############################################################################
 
-# ### Triple quotes all you to write multiline strings.  Including
-# ### spaces, indentation and newlines.
-kml_header = """<?xml version="1.0" encoding="UTF-8"?>
+# ###  Triple  quotes allowy  you  to  write multiline  strings,  that
+# include spaces, indentation and newlines.
+
+# kml_path_header sets the name of the file name(Path from Pico).
+# Waypoints  style(black  point,  or palcemark_circle.png).   And  the
+# Placemark  line  sytle(red path).   <MultiGeometry  </MultiGeometry>
+# indicate that multiple points/waypoints on  the path are going to be
+# added to this section.
+
+# NOTE: for a kml  file there is always a pair  to Opening and Closing
+# markers.  eg <Placemark> and </Placemark>.
+
+kml_path_header = """<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Path from Pico</name>
@@ -217,14 +234,20 @@ kml_header = """<?xml version="1.0" encoding="UTF-8"?>
       <MultiGeometry>
 """
 
-kml_points = ""
-coordinates_line = ""
+kml_waypoints = ""
+kml_waypoints_path = ""
 cvs_file = "ultimateGPStracker.log.OnPC.log"
 
 with open(cvs_file, 'r', encoding='utf-8') as filePChandle:
+    # for loop automatically stops at EOF.
+    #
+    # Each time through the loop, line is assigned the next line of text
+    # (including its  trailing \n).  When  there are no more  lines, the
+    # iterator  raises a  StopIteration signal  internally.  So  the for
+    # loop catches that automatically and exits cleanly.
     for line in filePChandle:
-        # remove       all        leading       and       trailing
-        # whitespace(spaces,tabs,and newlines)
+        # remove all leading and trailing whitespace(spaces,tabs,and
+        # newlines) from the line just read.
         line = line.strip()
         if not line:
             # skip over blank lines
@@ -232,16 +255,62 @@ with open(cvs_file, 'r', encoding='utf-8') as filePChandle:
 
         # splits the stirng in two parts at the , delimiter
         latitude, longitude = line.split(',')
-        
-        # f-strings(formatted string literal) lets you embed VARIABLES
-        # or expressions  directly inside  a string, using  {} braces.
-        # It automatically converts numbers  to strings.  Cleaner than
-        # using  plus sign  to concatinate  strings with  variables in
-        # them.
-        kml_points += f"<Point><coordinates>\n{longitude},{latitude}\n</coordinates></Point>\n"
-        coordinates_line += f"{longitude},{latitude} \n"
 
-kml_footer = f"""</MultiGeometry>
+
+        # <Point><coordinates>\n{longitude},{latitude}\n</coordinates></Point>\n"
+        # Sets up the waypoints.
+
+        #  <altitudeMode>clampToGround</altitudeMode>   is   used   so
+        #  elevation is not  taken into account for  the waypoints, as
+        #  otherwise  we may  loose display  of some  waypoints.  Your
+        #  waypoints may disappear  due to some error  in the elevation
+        #  of your waypoints.
+
+        # kml_waypoints_path connects all the waypoints with a red(setup
+        # in  header)   line  path.  Note  that   google  earth  expects
+        # longitude,latitude<space>.
+        
+        # f-strings(formatted string  literal) lets you  embed VARIABLES
+        # or expressions directly inside a  string, using {} braces.  It
+        # automatically converts numbers to strings.  Cleaner than using
+        # plus sign to concatinate strings with variables in them.
+        
+        kml_waypoints += f"<Point><coordinates>\n{longitude},{latitude}\n</coordinates></Point>\n"
+        kml_waypoints_path += f"{longitude},{latitude} \n"
+
+        # {kml_waypoints_path} the f  string kml_waypoints_path needs to
+        # be put  within braces  as it  is already  within an  f string.
+        # Otherwise, literally  kml_waypoints_path as a string  would be
+        # printed in the footer.
+
+        # Some other notes on f strings:
+        # f-strings are evaluated at the time the string is created.
+        # Anything inside {} is evaluated as an expression.
+        # Anything outside {} is just literal text.
+
+        # if you weren’t using an f-string, you could also do:
+
+        # Pauth essentially did this:
+        # kml_path_footer = """
+        # <coordinates>
+        # """ + kml_waypoints_path + """
+        # </coordinates>
+        # """
+
+        # But f  strings are cleaner  and more readable,  especially for
+        # multi-line text like KML
+
+        #######################################################################
+        # SUMMARY f-string:
+        # The  curly  braces {}  are  only  needed around  variables  or
+        # expressions whose  values you want inserted  into an f-string.
+        # Everything else outside the braces is just plain text.
+        ########################################################################
+        
+        # OR Paul did, footer = start_footer + kml_waypoints_path + end_footer
+        
+        
+kml_path_footer = f"""</MultiGeometry>
     </Placemark>
     <Placemark>
       <name>Path</name>
@@ -250,7 +319,7 @@ kml_footer = f"""</MultiGeometry>
         <tessellate>1</tessellate>
         <altitudeMode>clampToGround</altitudeMode>
         <coordinates>
-        {coordinates_line}
+        {kml_waypoints_path}
         </coordinates>
       </LineString>
     </Placemark>
@@ -258,11 +327,17 @@ kml_footer = f"""</MultiGeometry>
 </kml>
 """
 
-kml_content = kml_header + kml_points + kml_footer
+kml_content = kml_path_header + kml_waypoints + kml_path_footer
 kml_file = "ultimateGPStracker.log.OnPC.log.kml"
 
-with open(kml_file, 'w',
-          encoding='utf-8') as filePChandle:
+with open(kml_file, 'w', encoding='utf-8') as filePChandle:
     filePChandle.write(kml_content)
 
+# again we have a string kml_file inside a string so we need {}
 print(f"KML file {kml_file} created successfully.")
+
+# This will still work but is less clean code
+#print("KML file " + kml_file + " created successfully.")
+
+
+
