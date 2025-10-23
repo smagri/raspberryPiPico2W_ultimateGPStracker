@@ -204,36 +204,6 @@ time.sleep(0.1)
 #                     Convert PC cvs logfile to kml format.
 ###############################################################################
 
-# ###  Triple  quotes allowy  you  to  write multiline  strings,  that
-# include spaces, indentation and newlines.
-
-# kml_path_header sets the name of the file name(Path from Pico).
-# Waypoints  style(black  point,  or palcemark_circle.png).   And  the
-# Placemark  line  sytle(red path).   <MultiGeometry  </MultiGeometry>
-# indicate that multiple points/waypoints on  the path are going to be
-# added to this section.
-
-# NOTE: for a kml  file there is always a pair  to Opening and Closing
-# markers.  eg <Placemark> and </Placemark>.
-
-kml_path_header = """<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>Path from Pico</name>
-    <Style id="pointStyle">
-      <IconStyle>
-        <Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
-        <scale>1.0</scale>
-      </IconStyle>
-    </Style>
-    <Style id="lineStyle">
-      <LineStyle><color>ff0000ff</color><width>3</width></LineStyle>
-    </Style>
-    <Placemark>
-      <styleUrl>#pointStyle</styleUrl>
-      <MultiGeometry>
-"""
-
 kml_waypoints = ""
 kml_waypoints_path = ""
 cvs_file = "ultimateGPStracker.log.OnPC.log"
@@ -281,7 +251,7 @@ with open(cvs_file, 'r', encoding='utf-8') as filePChandle:
         # {kml_waypoints_path} the f  string kml_waypoints_path needs to
         # be put  within braces  as it  is already  within an  f string.
         # Otherwise, literally  kml_waypoints_path as a string  would be
-        # printed in the footer.
+        # printed in the kml_content.
 
         # Some other notes on f strings:
         # f-strings are evaluated at the time the string is created.
@@ -302,15 +272,44 @@ with open(cvs_file, 'r', encoding='utf-8') as filePChandle:
 
         #######################################################################
         # SUMMARY f-string:
+        #
         # The  curly  braces {}  are  only  needed around  variables  or
         # expressions whose  values you want inserted  into an f-string.
-        # Everything else outside the braces is just plain text.
-        ########################################################################
+        # Everything  else outside  the braces  is just  plain text.  It
+        # looks     after     changing     variables     to     strings.
+        # ######################################################################
         
-        # OR Paul did, footer = start_footer + kml_waypoints_path + end_footer
         
-        
-kml_path_footer = f"""</MultiGeometry>
+# ### Triple quotes  allow you to write multiline  strings, that include
+# spaces, indentation and newlines.
+
+# kml  path header  sets  the name  of the  file  name(Path from  Pico).
+# Waypoints  style(black  point,   or  palcemark_circle.png).   And  the
+# Placemark  line  sytle(red   path).   <MultiGeometry  </MultiGeometry>
+# indicate that  multiple points/waypoints on  the path are going  to be
+# added to this section.
+
+# NOTE: for a kml  file there is always a pair  to Opening and Closing
+# markers.  eg <Placemark> and </Placemark>.
+
+kml_file_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Path from Pico</name>
+    <Style id="pointStyle">
+      <IconStyle>
+        <Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
+        <scale>1.0</scale>
+      </IconStyle>
+    </Style>
+    <Style id="lineStyle">
+      <LineStyle><color>ff0000ff</color><width>3</width></LineStyle>
+    </Style>
+    <Placemark>
+      <styleUrl>#pointStyle</styleUrl>
+      <MultiGeometry>
+      {kml_waypoints}
+      </MultiGeometry>
     </Placemark>
     <Placemark>
       <name>Path</name>
@@ -327,17 +326,13 @@ kml_path_footer = f"""</MultiGeometry>
 </kml>
 """
 
-kml_content = kml_path_header + kml_waypoints + kml_path_footer
 kml_file = "ultimateGPStracker.log.OnPC.log.kml"
 
 with open(kml_file, 'w', encoding='utf-8') as filePChandle:
-    filePChandle.write(kml_content)
+    filePChandle.write(kml_file_content)
 
 # again we have a string kml_file inside a string so we need {}
 print(f"KML file {kml_file} created successfully.")
 
 # This will still work but is less clean code
 #print("KML file " + kml_file + " created successfully.")
-
-
-
