@@ -33,20 +33,6 @@ import time
 import sys
 
 
-def busy_wait_us(us):
-
-    # spins/blocks  this thread  from running.  time.sleep() yeilds  the
-    # processor, this does not.  It will allow us to determine the exact
-    # minimum time  that we  have to wait  for the GPS  via the  UART to
-    # return a line via readline() method.
-    
-    start = time.perf_counter()
-    target = us / 1_000_000
-    while (time.perf_counter() - start) < target:
-        pass
-
-
-    
 serialPort= "/dev/ttyACM0"
 baudRate = 115200 # for the pico it dosen't seem you can change this baudRate
 
@@ -60,7 +46,7 @@ baudRate = 115200 # for the pico it dosen't seem you can change this baudRate
 # giving up.
 try:
     serialObj = serial.Serial(serialPort, baudRate, timeout=5)
-    busy_wait_us(1)
+    time.sleep(1)
 except serial.SerialException as e:
     sys.exit(f"Error opening port: {e}")
     
@@ -119,7 +105,7 @@ while True:
 # Computers  and microcontrollers  communicate  via  bytes not  python
 # string objects.
 serialObj.write(b"filePicoHandle=open('ultimateGPStracker.log','r')\r\n")
-busy_wait_us(1)
+time.sleep(0.001)
 
 # After  the pico  recived the  write() command  it returns/echos  the
 # command back to the PC, so we can read it in.
@@ -131,7 +117,7 @@ busy_wait_us(1)
 # the string, including \r\n
 picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
 #print("Write to open file succeeded echoed line is= ", picoCmdResultLine)
-busy_wait_us(1)
+time.sleep(0.001)
 
 # Reading from logfile logfile on the pico to logfile on the PC:
 
@@ -149,7 +135,7 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
         # command on the  pico.  The command is to read  the next line
         # in the logfile.
         serialObj.write(b"filePicoHandle.readline()\r\n")
-        busy_wait_us(1)
+        time.sleep(0.001)
 
         # Read the echo of the readline() command.
 
@@ -166,7 +152,7 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             print("No echo recived from pico, timout hit. Breaking...")
             break
         ###print("Echo Line: ", echoLine)
-        busy_wait_us(1)
+        time.sleep(0.001)
 
         # Read the lines of the pico logfile
         picoCmdResultLine = serialObj.readline().decode('utf-8').strip()
@@ -174,7 +160,7 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             print("No data received from pico, timout hit. Breaking..")
             break
         ###print("Pico File line: ", picoCmdResultLine)
-        busy_wait_us(1)
+        time.sleep(0.001)
         
         # Write what is  in the logfile on the pico into  the logfile on
         # the PC.
@@ -193,11 +179,11 @@ with open('ultimateGPStracker.log.OnPC.log', 'w') as filePChandle:
             # newline to have each line under the other instead of side by side
             ###print("Pico File line written to PC logfile=", picoCmdResultLine)
             filePChandle.write(picoCmdResultLine + '\n')
-            busy_wait_us(1)
+            time.sleep(0.001)
 
 # Close the log file on the pico
 serialObj.write(b"filePicoHandle.close()\r\n")
-busy_wait_us(1)
+time.sleep(0.001)
 
 # To clear micopython buffer for safety.
 serialObj.write(b"print(\"FINISHED\")\r\n")
@@ -210,7 +196,7 @@ while True:
 
 # close the serial port connection from the PC to the pico.
 serialObj.close()
-busy_wait_us(1)
+time.sleep(0.001)
 
 
 
