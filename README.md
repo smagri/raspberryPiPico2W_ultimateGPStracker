@@ -506,3 +506,17 @@ xfer.ultimateGPStracker.log.Pico2PC.py hangs:
 		xfer.ultimateGPStracker.log.Pico2PC.withSleeps.py
 		INSTEAD OF
 		xfer.ultimateGPStracker.log.Pico2PC.py
+
+
+
+xferPicoLog2PCcsv2kml.py
+------------------------
+
+This now replaces xfer.ultimateGPStracker.log.Pico2PC.py.
+
+	It includes busy_wait_us(us) after each serialObj member function
+    call.  Seems to be necessary for script not to hang.  Sweet point
+    is 1us, ie busy_wait_us(1).  Making it smaller doesn't seem to
+    make it run any faster.
+
+	
