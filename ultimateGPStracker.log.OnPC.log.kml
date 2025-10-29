@@ -14,7 +14,7 @@
     <Placemark>
       <styleUrl>#pointStyle</styleUrl>
       <MultiGeometry>
-      <Point><coordinates>
+<Point><coordinates>
 150.9695,-33.77667
 </coordinates></Point>
 <Point><coordinates>
@@ -176,8 +176,7 @@
 <Point><coordinates>
 150.9692,-33.7768
 </coordinates></Point>
-
-      </MultiGeometry>
+</MultiGeometry>
     </Placemark>
     <Placemark>
       <name>Path</name>

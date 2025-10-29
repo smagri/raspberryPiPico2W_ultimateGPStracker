@@ -285,9 +285,12 @@ mpremote connect /dev/ttyACM0
 * NOTE: sometimes you need to press return to get the >>> REPL prompt.
 
 >>> import os
+
 >>> os.listdir(".") 
 ['main.py', 'ssd1306.py', 'ultimateGPStracker.log']
+
 >>> os.remove('main.py')
+
 >>> os.listdir(".") 
 ['ssd1306.py', 'ultimateGPStracker.log']
 >>> 
