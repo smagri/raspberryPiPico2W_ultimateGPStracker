@@ -70,56 +70,13 @@
 # Since pico is a 3.3V device 3.3V needs to be used to power I2C
 # devices.
 
-from machine import SPI, Pin, I2C, UART, reset
+from machine import Pin, I2C, UART, reset
 import time
 import _thread
 from ssd1306 import SSD1306_I2C
 import math
 import sys
 import os  # Import os module for file system operations
-import sdcard
-
-
-
-def logging2sdcard():
-    print("dbg: logging2sdcard: before init of SPI pins")
-    spi = SPI(1,sck=Pin(14), mosi=Pin(15), miso=Pin(12))
-    #cs = Pin(13)
-    cs = Pin(13, Pin.OUT) # by default this is an input pin
-    try:
-        moduleSDcard = sdcard.SDCard(spi, cs)
-        print("SDCard init OK")
-    except Exception as e:
-        print("SDCard init FAILED:", e)
-        return None, None
-
-    print("dbg: logging2sdcard: in logging2sdcard()")
-    #os.mount(sd, '/sd')
-    os.mount(moduleSDcard, '/sd')
-
-    # Open and append to a new file on the sdcard
-    sdcard_file = open('/sd/ultimateGPStrackerSDcard.log', 'a')
-    
-    curLatitude = GPSdata['latitudeDecimalDegrees']
-    curLongitude = GPSdata['longitudeDecimalDegrees']
-
-    appendLine_strLine = str(curLatitude) + "," + str(curLongitude)
-    
-    sdcard_file.write(appendLine_strLine + '\n')
-    sdcard_file.close()
-
-    # Read this file from the sdcard
-    # sdcard_file = open('/ultimateGPStrackerSDcard.log', 'r')
-    # sdcardContents_line1 = sdcard_file.read()
-    # sdcard_file.close()
-
-    # print(sdcardContents_line1)
-    time.sleep(0.3)
-
-    print("dbg: logging2sdcard: before return in logging2sdcard()")
-    return curLatitude, curLongitude
-
-
 
 
 #time.sleep(10)
@@ -1294,8 +1251,7 @@ def main():
     # Setup IRQ on yellow button press to goto next page on ssd1302 OLED.
     
     global butOnePin # button one is connected to GPIO pin 12
-    #butOnePin = 12 # button one is connected to GPIO pin 12
-    butOnePin = 10 # button one is connected to GPIO pin 10 due to sdcard
+    butOnePin = 12 # button one is connected to GPIO pin 12
     global butOne
     butOne = Pin(butOnePin, Pin.IN, Pin.PULL_UP) # object associated GPIO pin 12
     global butOneUp
@@ -1456,17 +1412,10 @@ def main():
                         startLoggingTime = time.time()
                         #print("dbg: main: Initialising startLoggingTime")
                         #print("dbg: main: logging=", logging)
-                        #latitudeCur, longitudeCur = logging2pico()
-                        print("dbg: main: not startLoggingTime BEFORE logging2sdcard()")
-                        latitudeCur, longitudeCur = logging2sdcard()
+                        latitudeCur, longitudeCur = logging2pico()
                         displayOLEDlogging(latitudeCur, longitudeCur)
-                        # print("On Pico, LOGGING Latitude & Longitude to"
-                        #       " ultimateGPStracker.log ")
-                        print("On SDcard, LOGGING Latitude & Longitude to"
-                               " ultimateGPStrackersdcard.log ")
-                        print("dbg: main: not startLogginTime AFTER logging2sdcard()")
-
-                        
+                        print("On Pico, LOGGING Latitude & Longitude to"
+                              " ultimateGPStracker.log ")
                         # Reset for next logging period
                         #startLoggingTime = False
 
@@ -1474,17 +1423,12 @@ def main():
                     # loggingInterval seconds.
                     if time.time()-startLoggingTime > loggingInterval:
                         #print("dbg: main: logging=", logging)
-                        #latitudeCur, longitudeCur = logging2pico()
-                        latitudeCur, longitudeCur = logging2sdcard()
+                        latitudeCur, longitudeCur = logging2pico()
 
                         displayOLEDlogging(latitudeCur, longitudeCur)
 
-                        # print("On Pico, LOGGING Latitude & Longitude to"
-                        #       " ultimateGPStracker.log ")
-                        print("dbg: main: before logging2sdcard()")
-                        print("On SDcard, LOGGING Latitude & Longitude to"
-                              " ultimateGPStrackersdcard.log ")
-                        print("dbg: main: after logging2sdcard()")
+                        print("On Pico, LOGGING Latitude & Longitude to"
+                              " ultimateGPStracker.log ")
 
                         # reset when you last logged data
                         startLoggingTime = time.time()
