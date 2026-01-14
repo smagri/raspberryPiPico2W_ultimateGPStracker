@@ -82,31 +82,19 @@ import sdcard
 
 
 def logging2sdcard():
-    print("dbg: logging2sdcard: before init of SPI pins")
-    spi = SPI(1,sck=Pin(14), mosi=Pin(15), miso=Pin(12))
-    #cs = Pin(13)
-    cs = Pin(13, Pin.OUT) # by default this is an input pin
-    try:
-        moduleSDcard = sdcard.SDCard(spi, cs)
-        print("SDCard init OK")
-    except Exception as e:
-        print("SDCard init FAILED:", e)
-        return None, None
 
-    print("dbg: logging2sdcard: in logging2sdcard()")
-    #os.mount(sd, '/sd')
-    os.mount(moduleSDcard, '/sd')
 
-    # Open and append to a new file on the sdcard
-    sdcard_file = open('/sd/ultimateGPStrackerSDcard.log', 'a')
+#    sdcard_file = open('/sd/ultimateGPStrackerSDcard.log', 'a')
     
     curLatitude = GPSdata['latitudeDecimalDegrees']
     curLongitude = GPSdata['longitudeDecimalDegrees']
 
     appendLine_strLine = str(curLatitude) + "," + str(curLongitude)
-    
     sdcard_file.write(appendLine_strLine + '\n')
-    sdcard_file.close()
+
+    # A write in Micropython is buffered. flush() and close() flush data.
+    sdcard_file.flush()
+ #   sdcard_file.close()
 
     # Read this file from the sdcard
     # sdcard_file = open('/ultimateGPStrackerSDcard.log', 'r')
@@ -118,7 +106,6 @@ def logging2sdcard():
 
     print("dbg: logging2sdcard: before return in logging2sdcard()")
     return curLatitude, curLongitude
-
 
 
 
@@ -1360,6 +1347,29 @@ def main():
     startLoggingTime = 0
 
 
+    # Setup SPI comms with the sdcard
+    spi = SPI(1,sck=Pin(14), mosi=Pin(15), miso=Pin(12))
+    #cs = Pin(13)
+    cs = Pin(13, Pin.OUT) # by default this is an input pin
+    try:
+        moduleSDcard = sdcard.SDCard(spi, cs)
+        print("SDCard init OK")
+    except Exception as e:
+        print("SDCard init FAILED:", e)
+        return None, None
+
+    #print("dbg: main: MOUNT sdcard")
+    #os.mkdir('/sd')
+    # Mount the sdcard, ready for creating files on it.
+    os.mount(moduleSDcard, '/sd')
+
+    # Open logfile for appending to a new file on the sdcard
+    print("\nOPENING sdcard logfile")
+    global sdcard_file
+    sdcard_file = open('/sd/ultimateGPStrackerSDcard.log', 'a')
+    
+    
+    
     try:
         while True:
             # You need to acquire the lock as readGPSdata() thread may be
@@ -1457,15 +1467,12 @@ def main():
                         #print("dbg: main: Initialising startLoggingTime")
                         #print("dbg: main: logging=", logging)
                         #latitudeCur, longitudeCur = logging2pico()
-                        print("dbg: main: not startLoggingTime BEFORE logging2sdcard()")
                         latitudeCur, longitudeCur = logging2sdcard()
                         displayOLEDlogging(latitudeCur, longitudeCur)
                         # print("On Pico, LOGGING Latitude & Longitude to"
                         #       " ultimateGPStracker.log ")
                         print("On SDcard, LOGGING Latitude & Longitude to"
                                " ultimateGPStrackersdcard.log ")
-                        print("dbg: main: not startLogginTime AFTER logging2sdcard()")
-
                         
                         # Reset for next logging period
                         #startLoggingTime = False
@@ -1531,10 +1538,17 @@ def main():
         #reset()
         
         # blank the OLED screen, ready for next display output
+        print("\nClearing Display")
         display.fill(0)
         display.show()
 
-        print("Exited Cleanly")
+        print("\nClosing logfile on sdcard")
+        sdcard_file.close()
+
+        print("\nUnmounting SDcard")
+        os.umount("/sd")
+        
+        print("\nExited Cleanly")
 
     
 def ackGPScommand():
