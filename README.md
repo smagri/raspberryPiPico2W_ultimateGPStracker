@@ -523,3 +523,19 @@ This now replaces xfer.ultimateGPStracker.log.Pico2PC.py.
     make it run any faster.
 
 	
+
+Logging latitude and longitude to the sdcard:
+-----------------
+Get the current version of the ssd1306 driver from the github
+-------------------------------------------------------------
+repository:
+----------
+
+https://github.com/Lucvolders/MicroPython/blob/main/Libraries/SDcard/sdcard.py
+
+Copy it  into the directory  where your main.py  file is, in  our case
+ultimateGPStracker.py is our main.py.
+
+File->Save As and SELECT 'Raspberry  Pi Pico' (not 'This Computer') to
+write this driver into the pico's filesystem.
+
