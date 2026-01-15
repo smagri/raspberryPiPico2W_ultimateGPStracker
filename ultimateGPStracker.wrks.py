@@ -84,6 +84,8 @@ import sdcard
 def logging2sdcard():
 
 
+#    sdcard_file = open('/sd/ultimateGPStrackerSDcard.log', 'a')
+    
     curLatitude = GPSdata['latitudeDecimalDegrees']
     curLongitude = GPSdata['longitudeDecimalDegrees']
 
@@ -92,15 +94,17 @@ def logging2sdcard():
 
     # A write in Micropython is buffered. flush() and close() flush data.
     sdcard_file.flush()
+ #   sdcard_file.close()
 
     # Read this file from the sdcard
     # sdcard_file = open('/ultimateGPStrackerSDcard.log', 'r')
     # sdcardContents_line1 = sdcard_file.read()
     # sdcard_file.close()
-    # print(sdcardContents_line1)
 
+    # print(sdcardContents_line1)
     time.sleep(0.3)
 
+    print("dbg: logging2sdcard: before return in logging2sdcard()")
     return curLatitude, curLongitude
 
 
@@ -1484,8 +1488,10 @@ def main():
 
                         # print("On Pico, LOGGING Latitude & Longitude to"
                         #       " ultimateGPStracker.log ")
+                        print("dbg: main: before logging2sdcard()")
                         print("On SDcard, LOGGING Latitude & Longitude to"
                               " ultimateGPStrackersdcard.log ")
+                        print("dbg: main: after logging2sdcard()")
 
                         # reset when you last logged data
                         startLoggingTime = time.time()

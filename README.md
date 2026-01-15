@@ -539,3 +539,29 @@ ultimateGPStracker.py is our main.py.
 File->Save As and SELECT 'Raspberry  Pi Pico' (not 'This Computer') to
 write this driver into the pico's filesystem.
 
+
+
+Using code(vscode) to access pico FS an manipulate files using
+--------------------------------------------------------------
+vscode(called code on linux).
+-----------------------------
+Install the MicroPython extension MicroPico.
+
+Plug in pico to usb port.
+
+You should see Pico Connected on bottom toolbar.
+
+Select Toggle Mpy FS.
+
+Ctr-Shift-P
+
+Search for MicroPico commands.
+
+Select MicoPico:Download project from pico.
+
+
+This will let you edit, delete files, copy files to the pico...etc.
+
+
+Use Ctr-Shif-P MicroPico:.....cmd to perform actions on the pico, like
+run file on pico.
