@@ -538,7 +538,6 @@ def parseAndProcessGPSdata(NMEAmain):
         return
     
     if readFix != 0:
-        print("dbg: parseAndProcessGPS: : Getting NEW Values")
         GPSdata['fix'] = True
 
         # Processing GPGGA NMEA string
@@ -600,12 +599,8 @@ def parseAndProcessGPSdata(NMEAmain):
         # offest for daylight saving or not
         utcTime = NMEAmain['GPGGA'].split(',')[1]
         utcDate = NMEAmain['GPRMC'].split(',')[9]
-        print("dbg: parseAndProcessGPSdata: utcTime=", utcTime)
-        print("dbg: parseAndProcessGPSdata: utcDate=", utcDate)
 
         time, date = UTCtoLocalDateAndTime(utcTime, utcDate)
-        print("dbg: parseAndProcessGPSdata: time=", time)
-        print("dbg: parseAndProcessGPSdata: date=", date)
         
         # Store local time in GPSdata dictionary
         GPSdata['time'] = time
@@ -731,8 +726,6 @@ def displayOLED():
             display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 24)
             display.text("Speed:" + str(GPSdata['knots']) + 'km/h', 0, 32)
             display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 40)
-            print("dbg: displayOLED: _IN_ systemState=0")
-            #display.text("dbg displayOLED: in State=0")
             #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
             display.text("TrueAlt:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
             display.text("GPSAlt:" + str(GPSdata['altitude']) + 'm', 0, 56)
@@ -1055,14 +1048,8 @@ def butOneIRQ(pin):
         # This is atomic for simple assignments like booleans in
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
-        if systemState==4:
-            systemState = 0
-            #GPSdata['fix'] = True
-        else:
-            systemState += 1
-        
+        systemState += 1
         #print('dbg: butOneIRQ: Button One Triggered')
-    print("dbg: butOneIRQ: systemState=", systemState)
     butOneOld=butOneValue
 
     
@@ -1400,12 +1387,6 @@ def main():
             dataLock.release()
             #print(NMEAmain['GPGGA'])
             #
-            if (GPS.any()):
-                print("dbg: main: UART ACTIVE")
-            else:
-                print("dbg: main: UART DEAD")
-                
-            
             parseAndProcessGPSdata(NMEAmain)
 
             # if GPSdata['fix'] == False:
