@@ -533,11 +533,7 @@ def parseAndProcessGPSdata(NMEAmain):
         return
     
     readFix=int(NMEAmain['GPGGA'].split(',')[6])
-    if readFix == 0:
-        GPSdata['fix'] = False
-        return
-    
-    if readFix != 0:
+    if readFix !=0:
         GPSdata['fix'] = True
 
         # Processing GPGGA NMEA string
@@ -1353,13 +1349,8 @@ def main():
     cs = Pin(13, Pin.OUT) # by default this is an input pin
     try:
         moduleSDcard = sdcard.SDCard(spi, cs)
-        display.text("SDcard init OK", 0, 8)
-        display.show()
         print("SDCard init OK")
-        time.sleep(3)
     except Exception as e:
-        display.text("SDcard init FAILED", 0, 8)
-        display.show()
         print("SDCard init FAILED:", e)
         return None, None
 
@@ -1384,13 +1375,9 @@ def main():
             NMEAmain = NMEAdata.copy()
             dataLock.release()
             #print(NMEAmain['GPGGA'])
+
             #
             parseAndProcessGPSdata(NMEAmain)
-
-            # if GPSdata['fix'] == False:
-            #     display.text("No Sattilite Data", 0, 8)
-            #     display.show()
-
             
             if GPSdata['fix'] == False:
                 print("Waiting for Fix . . .")
@@ -1444,7 +1431,6 @@ def main():
                               str(GPSdata['headingP1P2']) + " deg")
                         #heading = None
 
-                        
                 elif not terminateMainTimeout:
 
                     # Allows  you  to  start   logging  mode  or  kill

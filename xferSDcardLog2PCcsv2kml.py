@@ -50,137 +50,135 @@ print("\nExited Cleanly")
 # #                     Convert PC cvs logfile to kml format.
 # ###############################################################################
 
-# kml_waypoints = ""
-# kml_waypoints_path = ""
-# cvs_file = "ultimateGPStracker.log.OnPC.log"
+kml_waypoints = ""
+kml_waypoints_path = ""
+cvs_file = "ultimateGPStrackerSDcard.log.onPC.log"
 
-# with open(cvs_file, 'r', encoding='utf-8') as filePChandle:
-#     # for loop automatically stops at EOF.
-#     #
-#     # Each time through the loop, line is assigned the next line of text
-#     # (including its  trailing \n).  When  there are no more  lines, the
-#     # iterator  raises a  StopIteration signal  internally.  So  the for
-#     # loop catches that automatically and exits cleanly.
-#     for line in filePChandle:
-#         # remove all leading and trailing whitespace(spaces,tabs,and
-#         # newlines) from the line just read.
-#         line = line.strip()
-#         if not line:
-#             # skip over blank lines
-#             continue
+with open(cvs_file, 'r', encoding='utf-8') as filePChandle:
+    # for loop automatically stops at EOF.
+    #
+    # Each time through the loop, line is assigned the next line of text
+    # (including its  trailing \n).  When  there are no more  lines, the
+    # iterator  raises a  StopIteration signal  internally.  So  the for
+    # loop catches that automatically and exits cleanly.
+    for line in filePChandle:
+        # remove all leading and trailing whitespace(spaces,tabs,and
+        # newlines) from the line just read.
+        line = line.strip()
+        if not line:
+            # skip over blank lines
+            continue
 
-#         # splits the stirng in two parts at the , delimiter
-#         latitude, longitude = line.split(',')
+        # splits the stirng in two parts at the , delimiter
+        latitude, longitude = line.split(',')
 
 
-#         # <Point><coordinates>\n{longitude},{latitude}\n</coordinates></Point>\n"
-#         # Sets up the waypoints.
+        # <Point><coordinates>\n{longitude},{latitude}\n</coordinates></Point>\n"
+        # Sets up the waypoints.
 
-#         #  <altitudeMode>clampToGround</altitudeMode>   is   used   so
-#         #  elevation is not  taken into account for  the waypoints, as
-#         #  otherwise  we may  loose display  of some  waypoints.  Your
-#         #  waypoints may disappear  due to some error  in the elevation
-#         #  of your waypoints.
+        #  <altitudeMode>clampToGround</altitudeMode>   is   used   so
+        #  elevation is not  taken into account for  the waypoints, as
+        #  otherwise  we may  loose display  of some  waypoints.  Your
+        #  waypoints may disappear  due to some error  in the elevation
+        #  of your waypoints.
 
-#         # kml_waypoints_path connects all the waypoints with a red(setup
-#         # in  header)   line  path.  Note  that   google  earth  expects
-#         # longitude,latitude<space>.
+        # kml_waypoints_path connects all the waypoints with a red(setup
+        # in  header)   line  path.  Note  that   google  earth  expects
+        # longitude,latitude<space>.
         
-#         # f-strings(formatted string  literal) lets you  embed VARIABLES
-#         # or expressions directly inside a  string, using {} braces.  It
-#         # automatically converts numbers to strings.  Cleaner than using
-#         # plus sign to concatinate strings with variables in them.
+        # f-strings(formatted string  literal) lets you  embed VARIABLES
+        # or expressions directly inside a  string, using {} braces.  It
+        # automatically converts numbers to strings.  Cleaner than using
+        # plus sign to concatinate strings with variables in them.
         
-#         kml_waypoints += f"<Point><coordinates>\n{longitude},{latitude}\n</coordinates></Point>\n"
-#         kml_waypoints_path += f"{longitude},{latitude} \n"
+        kml_waypoints += f"<Point><coordinates>\n{longitude},{latitude}\n</coordinates></Point>\n"
+        kml_waypoints_path += f"{longitude},{latitude} \n"
 
-#         # {kml_waypoints_path} the f  string kml_waypoints_path needs to
-#         # be put  within braces  as it  is already  within an  f string.
-#         # Otherwise, literally  kml_waypoints_path as a string  would be
-#         # printed in the kml_content.
+        # {kml_waypoints_path} the f  string kml_waypoints_path needs to
+        # be put  within braces  as it  is already  within an  f string.
+        # Otherwise, literally  kml_waypoints_path as a string  would be
+        # printed in the kml_content.
 
-#         # Some other notes on f strings:
-#         # f-strings are evaluated at the time the string is created.
-#         # Anything inside {} is evaluated as an expression.
-#         # Anything outside {} is just literal text.
+        # Some other notes on f strings:
+        # f-strings are evaluated at the time the string is created.
+        # Anything inside {} is evaluated as an expression.
+        # Anything outside {} is just literal text.
 
-#         # if you weren’t using an f-string, you could also do:
+        # if you weren’t using an f-string, you could also do:
 
-#         # Pauth essentially did this:
-#         # kml_path_footer = """
-#         # <coordinates>
-#         # """ + kml_waypoints_path + """
-#         # </coordinates>
-#         # """
+        # Pauth essentially did this:
+        # kml_path_footer = """
+        # <coordinates>
+        # """ + kml_waypoints_path + """
+        # </coordinates>
+        # """
 
-#         # But f  strings are cleaner  and more readable,  especially for
-#         # multi-line text like KML
+        # But f  strings are cleaner  and more readable,  especially for
+        # multi-line text like KML
 
-#         #######################################################################
-#         # SUMMARY f-string:
-#         #
-#         # The  curly  braces {}  are  only  needed around  variables  or
-#         # expressions whose  values you want inserted  into an f-string.
-#         # Everything  else outside  the braces  is just  plain text.  It
-#         # looks     after     changing     variables     to     strings.
-#         # ######################################################################
+        #######################################################################
+        # SUMMARY f-string:
+        #
+        # The  curly  braces {}  are  only  needed around  variables  or
+        # expressions whose  values you want inserted  into an f-string.
+        # Everything  else outside  the braces  is just  plain text.  It
+        # looks     after     changing     variables     to     strings.
+        # ######################################################################
         
         
-# # ### Triple quotes  allow you to write multiline  strings, that include
-# # spaces, indentation and newlines.
+# ### Triple quotes  allow you to write multiline  strings, that include
+# spaces, indentation and newlines.
 
-# # kml  path header  sets  the name  of the  file  name(Path from  Pico).
-# # Waypoints  style(black  point,   or  palcemark_circle.png).   And  the
-# # Placemark  line  sytle(red   path).   <MultiGeometry  </MultiGeometry>
-# # indicate that  multiple points/waypoints on  the path are going  to be
-# # added to this section.
+# kml  path header  sets  the name  of the  file  name(Path from  Pico).
+# Waypoints  style(black  point,   or  palcemark_circle.png).   And  the
+# Placemark  line  sytle(red   path).   <MultiGeometry  </MultiGeometry>
+# indicate that  multiple points/waypoints on  the path are going  to be
+# added to this section.
 
-# # NOTE: for a kml  file there is always a pair  to Opening and Closing
-# # markers.  eg <Placemark> and </Placemark>.
+# NOTE: for a kml  file there is always a pair  to Opening and Closing
+# markers.  eg <Placemark> and </Placemark>.
 
-# kml_file_content = f"""<?xml version="1.0" encoding="UTF-8"?>
-# <kml xmlns="http://www.opengis.net/kml/2.2">
-#   <Document>
-#     <name>Path from Pico</name>
-#     <Style id="pointStyle">
-#       <IconStyle>
-#         <Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
-#         <scale>1.0</scale>
-#       </IconStyle>
-#     </Style>
-#     <Style id="lineStyle">
-#       <LineStyle><color>ff0000ff</color><width>3</width></LineStyle>
-#     </Style>
-#     <Placemark>
-#       <styleUrl>#pointStyle</styleUrl>
-#       <MultiGeometry>
-#       {kml_waypoints}
-#       </MultiGeometry>
-#     </Placemark>
-#     <Placemark>
-#       <name>Path</name>
-#       <styleUrl>#lineStyle</styleUrl>
-#       <LineString>
-#         <tessellate>1</tessellate>
-#         <altitudeMode>clampToGround</altitudeMode>
-#         <coordinates>
-#         {kml_waypoints_path}
-#         </coordinates>
-#       </LineString>
-#     </Placemark>
-#   </Document>
-# </kml>
-# """
+kml_file_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Path from Pico</name>
+    <Style id="pointStyle">
+      <IconStyle>
+        <Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
+        <scale>1.0</scale>
+      </IconStyle>
+    </Style>
+    <Style id="lineStyle">
+      <LineStyle><color>ff0000ff</color><width>3</width></LineStyle>
+    </Style>
+    <Placemark>
+      <styleUrl>#pointStyle</styleUrl>
+      <MultiGeometry>
+      {kml_waypoints}
+      </MultiGeometry>
+    </Placemark>
+    <Placemark>
+      <name>Path</name>
+      <styleUrl>#lineStyle</styleUrl>
+      <LineString>
+        <tessellate>1</tessellate>
+        <altitudeMode>clampToGround</altitudeMode>
+        <coordinates>
+        {kml_waypoints_path}
+        </coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>
+"""
 
-# kml_file = "ultimateGPStracker.log.OnPC.log.kml"
+kml_file = "ultimateGPStrackerSDcard.log.onPC.log.kml"
 
-# with open(kml_file, 'w', encoding='utf-8') as filePChandle:
-#     filePChandle.write(kml_file_content)
+with open(kml_file, 'w', encoding='utf-8') as filePChandle:
+    filePChandle.write(kml_file_content)
 
-# # again we have a string kml_file inside a string so we need {}
-# print(f"KML file {kml_file} created successfully.")
+# again we have a string kml_file inside a string so we need {}
+print(f"KML file {kml_file} created successfully.")
 
-# # This will still work but is less clean code
-# #print("KML file " + kml_file + " created successfully.")
-
-    
+# This will still work but is less clean code
+#print("KML file " + kml_file + " created successfully.")
