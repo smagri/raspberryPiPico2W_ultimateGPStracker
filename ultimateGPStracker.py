@@ -80,6 +80,22 @@ import os  # Import os module for file system operations
 import sdcard
 
 
+# Create  global symbols  immediately, before  any main()  or thread()
+# gets  to run.   Why: MicroPython  threads can  run immediately  when
+# started, and global variables may not exist yet if they are assigned
+# later in main().
+
+# Otherwise, you get intermittent errors like:
+
+# NameError: name 'keepRunning' isn't defined
+# NameError: name 'GPS' isn't defined
+
+keepRunning = False      
+GPS = None
+NMEAdata = {}
+dataLock = None
+
+
 
 def logging2sdcard():
 
@@ -406,13 +422,15 @@ def yield_thread():
     # hakky way to do this is: time.sleep(10)
 
 
-# start: readGPSdata() thread ##################################################
+
+# start: Paul McHowter readGPSdata() thread - PRONE TO BUG/HEAP
+# fragmentation and corruption ########################################
 
 # This is the  reading NMEAdata thread.  NMEAdata comming  for the GPS
 # module via  a uart.  We  put this  in a thread  as we don't  want to
 # loose data while processing it.
 
-def readGPSdata():
+def readGPSdataOrig():
     # hacky time.sleep(10) as this also yeilds the thread
 
     # We  need  to  do  this  as  there is  a  bug  in  the  micropython
@@ -439,19 +457,27 @@ def readGPSdata():
     #global keepRunning, NMEAdata, GPS # NMEAdata is a dictionary, like a map in c++
     global NMEAdata # NMEAdata is a dictionary, like a map in c++
 
+    global keepRunning
+    global dataLock
+    global GPS
     
     # Initialise the GPS NMEA strings
     GPGGA = ""
     GPGSA = ""
     GPRMC = ""
     GPVTG = ""
+
+    # Wait until GPS is initialized
+    while GPS is None and keepRunning:
+        time.sleep(0.1)
+
+        
     # do nothing if there is no data in the buffer
-    # while not GPS.any():
-    #     pass
     while not GPS.any():
         time.sleep(0.1) # thread yeilds to avoid busy waits, though I
                         # think GPS.any() is non-blocking
-        #print("GPS UART has data, starting read loop...")   
+
+    # print("GPS UART has data, starting read loop...")   
     # now we have data, read buffer till it's empty, the stale
     # data, this clears the buffer
     while GPS.any():
@@ -509,7 +535,203 @@ def readGPSdata():
 
                 myNMEA = "" # reset to read the next NMEA data string
     print("Thread Terminated Cleanly")  
-# end: readGPSdata() thread ####################################################
+# end: readGPSdataOrig() thread - PRONE TO BUG/HEAP fragmentation and corruption
+
+
+
+# start: readGPSdata() thread via chatGPT ######################################
+def readGPSdata():
+
+    # This is the  reading NMEAdata thread.  NMEAdata  comming for the
+    # GPS module via a uart.  We put this in a thread as we don't want
+    # to  loose data  while processing  it.  It  assembles full  lines
+    # safely  using  a byte  buffer,  parses  required sentences,  and
+    # updates the shared NMEAdata dictionary under a lock.
+
+    print("Thread Running readGPSdata")
+
+    # ---- Globals used by this thread ----
+    global keepRunning
+    global dataLock
+    global GPS
+    global NMEAdata
+
+    # ---- Local NMEA storage ----
+    GPGGA = ""
+    GPGSA = ""
+    GPRMC = ""
+    GPVTG = ""
+
+    # ---- Allow main thread to finish initialization ----
+    # This avoids intermittent startup race conditions seen on Pico W
+    time.sleep(1)
+
+    # MicroPython threads can start before globals exist → always wait
+    # for initialization.
+    if not keepRunning:
+        print("Thread that reads data from GPS via Pico UART, readGPSdata(), \n"
+              "exiting before this fn starts.")
+        print("Thus its global variables inside main() not set yet.")
+        return
+
+
+    # ---- Wait until GPS object exists and system is running ----
+    while keepRunning and GPS is None:
+        time.sleep(0.1)
+
+    # ---- Wait until UART has some data ----
+    while keepRunning and not GPS.any():
+        time.sleep(0.1)
+
+    # ---- Flush any stale data in UART buffer ----
+    while GPS.any():
+        GPS.read()
+
+
+    # In my original code I was doing: Read one byte at a time, ie one
+    # char  at a  time till  EOL(in the  while keepRunning  loop), and
+    # decode it from  a byte to a string using  utf-8 codec(ASCII is a
+    # subset of UTF-8)
+
+    #       myChar=GPS.read(1).decode('utf-8')
+    #       myNMEA+=myChar
+
+    # Where each myNMEA += myChar allocates a new string in RAM.
+
+    # On  the   pico  this   causes  heap   fragmentation,  GC(Garbage
+    # Collector) pressure, and eventually random crashes or NameErrors
+    # for globals.  That is why the thread sometimes died after button
+    # presses, the extra CPU and IRQ activity changed the heap timing.
+
+    # GC  pressure  is the  system  in  python/micropython that  frees
+    # memory  automatically  when  objects  are no  longer  used.   In
+    # microPython GC is non-deterministic, it only runs when memory is
+    # low or when explicitly called(gc.collect).  This means the exact
+    # timing  of  allocations  and   frees  can  vary,  especially  in
+    # multi-threaded code or when interrupts happen.
+
+    # Note also that the pico also has a small heap(~264kb).  Remember
+    # the heap  is the  part of RAM  where dynamic  memory allocations
+    # happen.   Heap timing  refers  to  when the  GC  decides to  run
+    # relative to your code execution.
+    
+
+    # SUMMARY: Each character read created  a new string object, hence
+    # more memory  allocated on the heap,  doing this a lot  can cause
+    # heap  fragmentation.   When a  button  IRQ  happened or  another
+    # thread ran,  it could preempt  the current thread.  If  the heap
+    # was already  fragmented, the GC(frees memory  automatically when
+    # objects are  no longer  used) might  run in  the middle  of your
+    # thread.  That could lead to temporary invalid memory references,
+    # causing errors like: NameError: name 'keepRunning' isn't defined
+    # Even though  keepRunning was correctly initialized  — the memory
+    # timing was “off” due to GC and heap allocations.
+
+    
+    ############################################################################
+    # This, chatGPT  way of getting  GPS data and populating  the NEMA
+    # sentence dictionary/map avoids these problems and hence hardware
+    # works as expected.
+    ############################################################################
+    
+    # Where it  uses a  bytearray buffer  to assemble  lines.  Decodes
+    # once  per  line,  instead  of  appending one  char  at  a  time.
+    # Eliminates  thousands  of  small  allocations,  preventing  heap
+    # fragmentation.   Solves  random  NameError  and  thread  crashes
+    # caused by memory corruption.
+
+    
+    # ---- Byte buffer for assembling lines safely ----
+
+    # bytearray()  is  a  micropython  object.  It  creates  an  empty
+    # mutable sequence of bytes.  Remember  the GPS Uart sends data as
+    # bytes, not strings.
+    rxbuf = bytearray()
+
+    # ================= Main receive loop =================
+    while keepRunning:
+
+        # Read whatever bytes are available (non-blocking)
+        data = GPS.read()
+
+        if not data:
+            # Nothing available yet — yield CPU
+            time.sleep(0.01)
+            continue
+
+        # Process each byte.  Save each byte to the rx buffer till we
+        # reach an EOL indicating we have a full NMEA sentence.
+        for byte in data:
+
+            # Newline marks end of NMEA sentence so now we can process
+            # it.
+            if byte == 10:    # '\n'
+
+                try:
+                    # Decode it from bytes to a string using utf-8
+                    # codec(ASCII is a subset of UTF-8)
+                    line = rxbuf.decode('utf-8').strip()
+                except Exception:
+                    # Corrupt UTF-8 or partial data — discard
+                    rxbuf = rxbuf[0:0]
+
+                    continue
+
+                # Clear the  bytearray buffer ready for  the next NMEA
+                # sentence.  After processing, you  can reuse the same
+                # buffer instead of allocating  a new string each time
+                # as  per Paul  McHowter's  readGPSdata() code.   Thus
+                # prevents  constant  new  string allocations  in  the
+                # heap,  thus   reduces  heap  fragmentation   and  GC
+                # pressure.
+                rxbuf = rxbuf[0:0]
+
+
+                # Ignore empty or very short lines
+                if len(line) < 6:
+                    continue
+
+                # ---- Parse sentence type ----
+                sentence_id = line[1:6]
+
+                if sentence_id == "GPGGA":
+                    GPGGA = line
+
+                elif sentence_id == "GPGSA":
+                    GPGSA = line
+
+                elif sentence_id == "GPRMC":
+                    GPRMC = line
+
+                elif sentence_id == "GPVTG":
+                    GPVTG = line
+
+                # ---- Publish only when all sentences exist ----
+                if GPGGA and GPGSA and GPRMC and GPVTG:
+                    dataLock.acquire()
+                    try:
+                        NMEAdata = {
+                            'GPGGA': GPGGA,
+                            'GPGSA': GPGSA,
+                            'GPRMC': GPRMC,
+                            'GPVTG': GPVTG
+                        }
+                    finally:
+                        dataLock.release()
+
+            else:
+                # Accumulate byte into buffer
+                # Protect against runaway line length
+                if len(rxbuf) < 120:
+                    rxbuf.append(byte)
+                else:
+                    # Line too long or corrupted — reset buffer
+                    rxbuf = rxbuf[0:0]
+
+                    
+
+    print("Thread Terminated Cleanly")
+# end: readGPSdata()
 
 
 
@@ -1025,33 +1247,34 @@ def UTCtoLocalDateAndTime(utcTime, utcDate):
 
 
 
-def butOneIRQ(pin):
+def buttonOneIRQ(pin):
 
     ############################################################################
     # irq's are seperate threads in mycropython, they are preemptive
     #
     ############################################################################
 
-    global butOneUp,butOneDown
-    global butOneOld #previous state of button
+    global keepRunning, GPS 
+    global buttonOneUp,buttonOneDown
+    global buttonOneOld #previous state of button
     global systemState
-    butOneValue = butOne.value() # member function of butOne object
-    #print("butOneValue", butOneValue)
+    buttonOneValue = buttonOne.value() # member function of buttonOne object
+    #print("buttonOneValue", buttonOneValue)
 
     # debouncing the switch
     #
-    if butOneValue==0:
-        butOneDown = time.ticks_ms() # time when button pressed down
+    if buttonOneValue==0:
+        buttonOneDown = time.ticks_ms() # time when button pressed down
     else:
-        butOneValue==1
-        butOneUp = time.ticks_ms() # time when button goes back up
+        buttonOneValue==1
+        buttonOneUp = time.ticks_ms() # time when button goes back up
 
     # If in the last loop the button was in the up state and is now
     # pressed down in this loop, with a 50ms hysteresis(for switch
     # debounce noise, eg may get multiple 0's before you get a 1 and
     # visa versa).  Also, obviously button is pressed down after it was
-    # in the up state last so butOneDown-butOneUp is a +ve value.
-    if (butOneOld==1) and (butOneValue==0) and ((butOneDown-butOneUp) > 50):
+    # in the up state last so buttonOneDown-buttonOneUp is a +ve value.
+    if (buttonOneOld==1) and (buttonOneValue==0) and ((buttonOneDown-buttonOneUp) > 50):
         # This is atomic for simple assignments like booleans in
         # mycropython.  Counters, lists, dicts, multi-step operations:
         # use disable_irq() or carefully designed atomic methods.
@@ -1061,9 +1284,9 @@ def butOneIRQ(pin):
         else:
             systemState += 1
         
-        #print('dbg: butOneIRQ: Button One Triggered')
-    print("dbg: butOneIRQ: systemState=", systemState)
-    butOneOld=butOneValue
+        #print('dbg: buttonOneIRQ: Button One Triggered')
+    #print("dbg: buttonOneIRQ: systemState=", systemState)
+    buttonOneOld=buttonOneValue
 
     
 
@@ -1244,10 +1467,6 @@ def main():
     # Datasheet: Turn on everything (not all of it is parsed!)
     # gps.send_command(b'PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0')
 
-    # create the atomic lock in python, in c++ we put dataLock definition
-    # in header file.
-    global dataLock
-    dataLock = _thread.allocate_lock()
 
     # we can shutdown the thread with Ctrl-C cleanly, like the destructor
     # in c++
@@ -1295,17 +1514,17 @@ def main():
 
     # Setup IRQ on yellow button press to goto next page on ssd1302 OLED.
     
-    global butOnePin # button one is connected to GPIO pin 12
-    #butOnePin = 12 # button one is connected to GPIO pin 12
-    butOnePin = 10 # button one is connected to GPIO pin 10 due to sdcard
-    global butOne
-    butOne = Pin(butOnePin, Pin.IN, Pin.PULL_UP) # object associated GPIO pin 12
-    global butOneUp
-    butOneUp = 0 # button goes down to up
-    global butOneDown
-    butOneDown = 0# button goes up to down
-    global butOneOld
-    butOneOld = 1 # last time through the loop the buttion was up
+    global buttonOnePin # button one is connected to GPIO pin 12
+    #buttonOnePin = 12 # button one is connected to GPIO pin 12
+    buttonOnePin = 10 # button one is connected to GPIO pin 10 due to sdcard
+    global buttonOne
+    buttonOne = Pin(buttonOnePin, Pin.IN, Pin.PULL_UP) # object associated GPIO pin 12
+    global buttonOneUp
+    buttonOneUp = 0 # button goes down to up
+    global buttonOneDown
+    buttonOneDown = 0# button goes up to down
+    global buttonOneOld
+    buttonOneOld = 1 # last time through the loop the buttion was up
     
     global screenOne # display screen one fist
     screenOne = True # display screen one fist
@@ -1313,7 +1532,7 @@ def main():
     # button going from 1 to 0, call interrupt routine called button2irq
     # OR
     # button going from 0 to 1, cal interrupt routine called button2irq
-    butOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = butOneIRQ)
+    buttonOne.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = buttonOneIRQ)
 
 
     # Setup IRQ on green button press to start/stop logging latitude
@@ -1334,15 +1553,15 @@ def main():
     logging = False
     
  
-    # button going from 1 to 0, call interrupt routine called butOneIRQ
+    # button going from 1 to 0, call interrupt routine called buttonOneIRQ
     # OR
-    # button going from 0 to 1, cal interrupt routine called butOneIRQ
+    # button going from 0 to 1, cal interrupt routine called buttonOneIRQ
     button2.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING , handler = button2irq)
 
-    # launch the reading data thread readGPSdata()
-    _thread.start_new_thread(readGPSdata,())
-    time.sleep(2) # so we don't start reading data till there is some in
-                  # the UART buffer
+    # # launch the reading data thread readGPSdata()
+    # _thread.start_new_thread(readGPSdata,())
+    # time.sleep(2) # so we don't start reading data till there is some in
+    #               # the UART buffer
 
     # State controlled by button1              
     global systemState
@@ -1388,8 +1607,16 @@ def main():
     global sdcard_file
     sdcard_file = open('/sd/ultimateGPStrackerSDcard.log', 'a')
     
+    # create the atomic lock in python, in c++ we put dataLock definition
+    # in header file.
+    global dataLock
+    dataLock = _thread.allocate_lock()
     
-    
+    # launch the reading data thread readGPSdata(), all globals now defined
+    _thread.start_new_thread(readGPSdata,())
+    time.sleep(2) # so we don't start reading data till there is some in
+                  # the UART buffer
+
     try:
         while True:
             # You need to acquire the lock as readGPSdata() thread may be
@@ -1400,11 +1627,6 @@ def main():
             dataLock.release()
             #print(NMEAmain['GPGGA'])
             #
-            if (GPS.any()):
-                print("dbg: main: UART ACTIVE")
-            else:
-                print("dbg: main: UART DEAD")
-                
             
             parseAndProcessGPSdata(NMEAmain)
 
@@ -1421,6 +1643,7 @@ def main():
 
                 if not logging:
 
+                    print("dbg: main: NOT logging")
                     # rest time for logging 
                     startLoggingTime = 0
 
