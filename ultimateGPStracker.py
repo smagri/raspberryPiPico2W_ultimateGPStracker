@@ -760,7 +760,6 @@ def parseAndProcessGPSdata(NMEAmain):
         return
     
     if readFix != 0:
-        print("dbg: parseAndProcessGPS: : Getting NEW Values")
         GPSdata['fix'] = True
 
         # Processing GPGGA NMEA string
@@ -822,12 +821,8 @@ def parseAndProcessGPSdata(NMEAmain):
         # offest for daylight saving or not
         utcTime = NMEAmain['GPGGA'].split(',')[1]
         utcDate = NMEAmain['GPRMC'].split(',')[9]
-        print("dbg: parseAndProcessGPSdata: utcTime=", utcTime)
-        print("dbg: parseAndProcessGPSdata: utcDate=", utcDate)
 
         time, date = UTCtoLocalDateAndTime(utcTime, utcDate)
-        print("dbg: parseAndProcessGPSdata: time=", time)
-        print("dbg: parseAndProcessGPSdata: date=", date)
         
         # Store local time in GPSdata dictionary
         GPSdata['time'] = time
@@ -942,7 +937,7 @@ def displayOLED():
         #systemState = 0
     else:
         # we have a fix
-        print("dbg: displayOLED: systemState=", systemState)
+
         # use modulus to switch between the screens
         if systemState%5 == 0: #no remainder
             #display.text("ULTIMATE GPS: ", 0, 0)
@@ -953,9 +948,6 @@ def displayOLED():
             display.text("Long:" + str(GPSdata['longitudeDecimalDegrees']), 0, 24)
             display.text("Speed:" + str(GPSdata['knots']) + 'km/h', 0, 32)
             display.text("Head:" + str(GPSdata['heading']) + 'deg', 0, 40)
-            print("dbg: displayOLED: _IN_ systemState=0")
-            #display.text("dbg displayOLED: in State=0")
-            #display.text("Mag VarDir:" + str(GPSdata['Mag VarDir']), 0, 48)
             display.text("TrueAlt:" + str(GPSdata['trueAltitude']) + 'm', 0, 48)
             display.text("GPSAlt:" + str(GPSdata['altitude']) + 'm', 0, 56)
         elif systemState%5 == 1:
@@ -1057,12 +1049,6 @@ def displayOLEDterminateMain():
         # Round down the difference to whole numbers.  time.time()
         # returns a floating point number.
         elapsedSeconds = int(time.time() - timeoutStartTime)
-        # print("dbg: displayOLEDterminateMain: prevElapsedSeconds=",
-        #       prevElapsedSeconds)
-        # print("dbg: displayOLEDterminateMain: elapsedSeconds=",
-        #       elapsedSeconds)
-        # print("dbg: displayOLEDterminateMain: timoutCountdown=",
-        #       timeoutCountdown)
 
         if timeoutCountdown == 5:
             display.fill(0)
@@ -1074,7 +1060,6 @@ def displayOLEDterminateMain():
         
         if elapsedSeconds != prevElapsedSeconds:
             # another second has passed
-            #print("dbg: displayOLEDterminateMain: another second has passed")
             timeoutCountdown -= 1
             display.fill(0)
             display.text("Press Button2", 0, 16)
@@ -1090,7 +1075,6 @@ def displayOLEDterminateMain():
         # timeoutTime  seconds we  enter logging  mode as  button2 has
         # been pressed once.  pressed once.
         if button2pressed == 2:
-            #print("dbg: displayOLEDterminateMain: button2pressed", button2pressed)
             display.text("KILLING main.py", 0, 44)
             display.show()
             time.sleep(1) # show user Terminating for just 1 second
@@ -1169,7 +1153,7 @@ def UTCtoLocalDateAndTime(utcTime, utcDate):
         #utcOffset = 14 # testing if utcOffset is calculated correctly
         hour = int(utcTime[0:2])
         utcOffset = sydneyAutoCalcUTCoffset(year, month, day, hour)
-        # print("dbg: " + f"utcTime={utcTime}, utcDate={utcDate}, utcOffset={utcOffset}")
+
         # Calculate hours by adding UTC offset to UTC hours, convert to string
         hour = int(utcTime[0:2]) + utcOffset
 
@@ -1284,8 +1268,6 @@ def buttonOneIRQ(pin):
         else:
             systemState += 1
         
-        #print('dbg: buttonOneIRQ: Button One Triggered')
-    #print("dbg: buttonOneIRQ: systemState=", systemState)
     buttonOneOld=buttonOneValue
 
     
@@ -1305,7 +1287,6 @@ def button2irq(pin):
 
     
     button2value = button2.value() # member function of button2 object
-    #print("dbg: button2irq: button2value=", button2value)
 
     # deboundcing the switch
     #
@@ -1337,8 +1318,6 @@ def button2irq(pin):
         # the 5 second timout has occured the first time the button is
         # pressed.
         logging = not logging
-        #print('dbg: button2irq: Button Two Triggered')
-        #print("dbg: logging=", logging)
 
         # To determine if button2 is pressed within the 5 second wait
         # before logging starts.  Once set to 2 within the 5 second
@@ -1597,13 +1576,11 @@ def main():
         print("SDCard init FAILED:", e)
         return None, None
 
-    #print("dbg: main: MOUNT sdcard")
-    #os.mkdir('/sd')
     # Mount the sdcard, ready for creating files on it.
     os.mount(moduleSDcard, '/sd')
 
     # Open logfile for appending to a new file on the sdcard
-    print("\nOPENING sdcard logfile")
+    print("OPENING sdcard logfile")
     global sdcard_file
     sdcard_file = open('/sd/ultimateGPStrackerSDcard.log', 'a')
     
@@ -1643,7 +1620,6 @@ def main():
 
                 if not logging:
 
-                    print("dbg: main: NOT logging")
                     # rest time for logging 
                     startLoggingTime = 0
 
@@ -1676,10 +1652,8 @@ def main():
                     # displayOLED() calculates the point to point distance and heading
                     print("Great-circle distance Point1 to Point2:",
                           str(GPSdata['distanceP1P2']) + " m")
-                    #global headingP1P2
-                    #heading = GPSdata.get('headingP1P2')
                     heading = GPSdata.get('headingP1P2')
-                    #print("dbg: main: heading=", heading)
+
                     if heading is None:
                         print("Heading/Bearing (Longitude Degrees from North) Point1 to Point2:",
                               "N/A")
@@ -1698,8 +1672,8 @@ def main():
                     # kills main.py without rebooting the pico.
                     
                     terminateMainTimeout = displayOLEDterminateMain()
-                    print("dbg: main: terminateMainTimeout=",
-                          terminateMainTimeout)
+                    #print("dbg: main: terminateMainTimeout=",
+                    # terminateMainTimeout)
 
                 else:
                         
@@ -1718,9 +1692,7 @@ def main():
                         # we want to display the logging display
                         # straight after the first five seconds.
                         startLoggingTime = time.time()
-                        #print("dbg: main: Initialising startLoggingTime")
-                        #print("dbg: main: logging=", logging)
-                        #latitudeCur, longitudeCur = logging2pico()
+
                         latitudeCur, longitudeCur = logging2sdcard()
                         displayOLEDlogging(latitudeCur, longitudeCur)
                         # print("On Pico, LOGGING Latitude & Longitude to"
@@ -1734,8 +1706,7 @@ def main():
                     # Follwoing initial value log only every
                     # loggingInterval seconds.
                     if time.time()-startLoggingTime > loggingInterval:
-                        #print("dbg: main: logging=", logging)
-                        #latitudeCur, longitudeCur = logging2pico()
+
                         latitudeCur, longitudeCur = logging2sdcard()
 
                         displayOLEDlogging(latitudeCur, longitudeCur)
@@ -1803,6 +1774,7 @@ def main():
         print("\nExited Cleanly")
 
     
+
 def ackGPScommand():
 
     # When you send configuration or control commands (PMTK sentences)

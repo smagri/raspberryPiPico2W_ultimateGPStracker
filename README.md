@@ -565,3 +565,22 @@ This will let you edit, delete files, copy files to the pico...etc.
 
 Use Ctr-Shif-P MicroPico:.....cmd to perform actions on the pico, like
 run file on pico.
+
+
+
+Writing data, ie latitude and longitude to the SDcard when logging
+------------------------------------------------------------------------
+travel.
+-------------------------------------------------------------------------
+
+While moving the  latitude and longitude is no longer  being logged on
+the pico.  So we don't burn out the pico RAM write cycles.  We now log
+this data  to an SDcard  interfaced to the  pico.  The data  is logged
+into /sd/ultimateGPStrackerSDcard.log(via  Thonny or vscode)  with the
+/sd  mount  point on  the  when  interfaced  to  the pico.   And  just
+ultimateGPStrackerSDcard.log when mounting the  SDcard externally to a
+PC.  At this stage it just continues appending data to this file.
+
+At this stage there  is no python file you can run on  your PC to read
+the logfile data from the SDcard when interfaced to the pico.
+
