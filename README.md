@@ -582,5 +582,8 @@ ultimateGPStrackerSDcard.log when mounting the  SDcard externally to a
 PC.  At this stage it just continues appending data to this file.
 
 At this stage there  is no python file you can run on  your PC to read
-the logfile data from the SDcard when interfaced to the pico.
-
+the logfile  data from the  SDcard when  interfaced to the  pico.  Use
+xferSDcardLog2PCcsv2kml.py to  convert the  logfile to kml  format for
+google   earth   and   such    systems,   but   the   SDcard   logfile
+ultimateGPStrackerSDcard.log  must be  copied to  the PC  for this  to
+work.
